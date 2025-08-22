@@ -31,30 +31,48 @@ export type Database = {
       }
       products: {
         Row: {
+          barcode: string | null
           category_id: number | null
+          cost: number | null
           creat_at: string | null
           description: string | null
           id: number
+          image_url: string | null
+          is_active: boolean | null
+          min_stock: number | null
           name: string
           price: number
+          sku: string | null
           stock: number | null
         }
         Insert: {
+          barcode?: string | null
           category_id?: number | null
+          cost?: number | null
           creat_at?: string | null
           description?: string | null
           id?: number
+          image_url?: string | null
+          is_active?: boolean | null
+          min_stock?: number | null
           name: string
           price: number
+          sku?: string | null
           stock?: number | null
         }
         Update: {
+          barcode?: string | null
           category_id?: number | null
+          cost?: number | null
           creat_at?: string | null
           description?: string | null
           id?: number
+          image_url?: string | null
+          is_active?: boolean | null
+          min_stock?: number | null
           name?: string
           price?: number
+          sku?: string | null
           stock?: number | null
         }
         Relationships: []
