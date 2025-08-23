@@ -1,13 +1,40 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/layout/AppSidebar";
+import { ProductsView } from "@/components/products/ProductsView";
+import { CategoriesView } from "@/components/categories/CategoriesView";
+import { SalesView } from "@/components/sales/SalesView";
+import { POSView } from "@/components/pos/POSView";
+
+type View = "pos" | "products" | "categories" | "sales";
 
 const Index = () => {
+  const [currentView, setCurrentView] = useState<View>("pos");
+
+  const renderView = () => {
+    switch (currentView) {
+      case "pos":
+        return <POSView />;
+      case "products":
+        return <ProductsView />;
+      case "categories":
+        return <CategoriesView />;
+      case "sales":
+        return <SalesView />;
+      default:
+        return <POSView />;
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar currentView={currentView} onViewChange={setCurrentView} />
+        <main className="flex-1 p-4">
+          {renderView()}
+        </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
