@@ -1,7 +1,7 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { Calculator, Package, FolderTree, BarChart3 } from "lucide-react";
+import { Calculator, Package, FolderTree, BarChart3, Upload, Download, Zap, Settings, TrendingUp } from "lucide-react";
 
-type View = "pos" | "products" | "categories" | "sales";
+type View = "pos" | "products" | "categories" | "sales" | "bulk-products" | "import-csv" | "fast-sale" | "stock-adjustment" | "reports";
 
 interface AppSidebarProps {
   currentView: View;
@@ -20,6 +20,26 @@ const menuItems = [
     icon: Package,
   },
   {
+    id: "bulk-products" as View,
+    title: "Cadastro em Lote",
+    icon: Upload,
+  },
+  {
+    id: "import-csv" as View,
+    title: "Importar CSV",
+    icon: Download,
+  },
+  {
+    id: "fast-sale" as View,
+    title: "Venda Rápida",
+    icon: Zap,
+  },
+  {
+    id: "stock-adjustment" as View,
+    title: "Ajuste de Estoque",
+    icon: Settings,
+  },
+  {
     id: "categories" as View,
     title: "Categorias",
     icon: FolderTree,
@@ -28,6 +48,11 @@ const menuItems = [
     id: "sales" as View,
     title: "Vendas",
     icon: BarChart3,
+  },
+  {
+    id: "reports" as View,
+    title: "Relatórios",
+    icon: TrendingUp,
   },
 ];
 

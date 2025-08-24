@@ -50,10 +50,20 @@ export function PaymentModal({ open, onOpenChange, total, cartItems, onComplete 
 
       // Atualizar estoque dos produtos
       for (const item of cartItems) {
+        // Primeiro, buscar o estoque atual
+        const { data: productData, error: fetchError } = await supabase
+          .from("products")
+          .select("stock")
+          .eq("id", item.id)
+          .single();
+
+        if (fetchError) throw fetchError;
+
+        // Atualizar com o novo estoque
         const { error: updateError } = await supabase
           .from("products")
           .update({
-            stock: supabase.sql`stock - ${item.quantity}`
+            stock: Math.max(0, productData.stock - item.quantity)
           })
           .eq("id", item.id);
 

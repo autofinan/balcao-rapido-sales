@@ -48,7 +48,7 @@ export function SalesView() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setSales(data || []);
+      setSales((data || []) as Sale[]);
     } catch (error) {
       console.error("Erro ao carregar vendas:", error);
     } finally {

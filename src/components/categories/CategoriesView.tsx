@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 interface Category {
   id: string;
   name: string;
-  slug: string | null;
+  created_at?: string;
 }
 
 export function CategoriesView() {
@@ -131,8 +131,10 @@ export function CategoriesView() {
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold truncate">{category.name}</h3>
-                  {category.slug && (
-                    <p className="text-sm text-muted-foreground">/{category.slug}</p>
+                  {category.created_at && (
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(category.created_at).toLocaleDateString()}
+                    </p>
                   )}
                 </div>
                 <div className="flex gap-1">

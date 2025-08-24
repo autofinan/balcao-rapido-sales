@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 interface Category {
   id: string;
   name: string;
-  slug: string | null;
+  created_at?: string;
 }
 
 interface CategoryFormProps {
@@ -23,8 +23,7 @@ interface CategoryFormProps {
 export function CategoryForm({ open, onOpenChange, category, onSave, onClose }: CategoryFormProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    slug: "",
+    name: ""
   });
   const { toast } = useToast();
 
@@ -32,13 +31,11 @@ export function CategoryForm({ open, onOpenChange, category, onSave, onClose }: 
     if (open) {
       if (category) {
         setFormData({
-          name: category.name,
-          slug: category.slug || "",
+          name: category.name
         });
       } else {
         setFormData({
-          name: "",
-          slug: "",
+          name: ""
         });
       }
     }
@@ -57,8 +54,7 @@ export function CategoryForm({ open, onOpenChange, category, onSave, onClose }: 
   const handleNameChange = (name: string) => {
     setFormData(prev => ({
       ...prev,
-      name,
-      slug: prev.slug || generateSlug(name)
+      name
     }));
   };
 
@@ -78,8 +74,7 @@ export function CategoryForm({ open, onOpenChange, category, onSave, onClose }: 
       setLoading(true);
       
       const categoryData = {
-        name: formData.name.trim(),
-        slug: formData.slug.trim() || null,
+        name: formData.name.trim()
       };
 
       if (category) {
@@ -135,23 +130,11 @@ export function CategoryForm({ open, onOpenChange, category, onSave, onClose }: 
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => handleNameChange(e.target.value)}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="slug">Slug</Label>
-            <Input
-              id="slug"
-              value={formData.slug}
-              onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-              placeholder="categoria-exemplo"
-            />
-            <p className="text-xs text-muted-foreground">
-              Deixe em branco para gerar automaticamente
-            </p>
-          </div>
 
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>

@@ -16,27 +16,65 @@ export type Database = {
     Tables: {
       categories: {
         Row: {
-          id: number
+          created_at: string | null
+          id: string
           name: string
         }
         Insert: {
-          id?: number
+          created_at?: string | null
+          id?: string
           name: string
         }
         Update: {
-          id?: number
+          created_at?: string | null
+          id?: string
           name?: string
         }
         Relationships: []
       }
+      inventory_movements: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string | null
+          quantity: number
+          reason: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          quantity: number
+          reason?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          reason?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           barcode: string | null
-          category_id: number | null
+          category_id: string | null
           cost: number | null
-          creat_at: string | null
+          created_at: string | null
           description: string | null
-          id: number
+          id: string
           image_url: string | null
           is_active: boolean | null
           min_stock: number | null
@@ -47,11 +85,11 @@ export type Database = {
         }
         Insert: {
           barcode?: string | null
-          category_id?: number | null
+          category_id?: string | null
           cost?: number | null
-          creat_at?: string | null
+          created_at?: string | null
           description?: string | null
-          id?: number
+          id?: string
           image_url?: string | null
           is_active?: boolean | null
           min_stock?: number | null
@@ -62,11 +100,11 @@ export type Database = {
         }
         Update: {
           barcode?: string | null
-          category_id?: number | null
+          category_id?: string | null
           cost?: number | null
-          creat_at?: string | null
+          created_at?: string | null
           description?: string | null
-          id?: number
+          id?: string
           image_url?: string | null
           is_active?: boolean | null
           min_stock?: number | null
@@ -74,6 +112,86 @@ export type Database = {
           price?: number
           sku?: string | null
           stock?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_items: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string | null
+          quantity: number
+          sale_id: string | null
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          quantity: number
+          sale_id?: string | null
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          sale_id?: string | null
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          note: string | null
+          payment_method: string
+          total: number
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string | null
+          payment_method: string
+          total: number
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string | null
+          payment_method?: string
+          total?: number
         }
         Relationships: []
       }
