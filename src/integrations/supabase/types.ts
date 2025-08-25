@@ -153,6 +153,7 @@ export type Database = {
       sale_items: {
         Row: {
           created_at: string
+          custo_unitario: number | null
           id: string
           product_id: string | null
           quantity: number
@@ -162,6 +163,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custo_unitario?: number | null
           id?: string
           product_id?: string | null
           quantity: number
@@ -171,6 +173,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custo_unitario?: number | null
           id?: string
           product_id?: string | null
           quantity?: number
@@ -191,6 +194,13 @@ export type Database = {
             columns: ["sale_id"]
             isOneToOne: false
             referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales_with_profit"
             referencedColumns: ["id"]
           },
         ]
@@ -224,10 +234,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      sales_with_profit: {
+        Row: {
+          created_at: string | null
+          date: string | null
+          id: string | null
+          note: string | null
+          payment_method: string | null
+          profit_margin_percentage: number | null
+          total: number | null
+          total_profit: number | null
+          total_revenue: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      calculate_sale_profit: {
+        Args: { quantity: number; sale_price: number; unit_cost: number }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
