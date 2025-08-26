@@ -1,27 +1,45 @@
 import { useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
+import { Header } from "@/components/layout/Header";
+import { DashboardStats } from "@/components/layout/DashboardStats";
 import { ProductsView } from "@/components/products/ProductsView";
+import { POSView } from "@/components/pos/POSView";
 import { CategoriesView } from "@/components/categories/CategoriesView";
 import { SalesView } from "@/components/sales/SalesView";
-import { POSView } from "@/components/pos/POSView";
 import { BulkProductsView } from "@/components/products/BulkProductsView";
 import { ImportCSVView } from "@/components/products/ImportCSVView";
 import { FastSaleView } from "@/components/sales/FastSaleView";
 import { StockAdjustmentView } from "@/components/inventory/StockAdjustmentView";
 import { ReportsView } from "@/components/reports/ReportsView";
 
-type View = "pos" | "products" | "categories" | "sales" | "bulk-products" | "import-csv" | "fast-sale" | "stock-adjustment" | "reports";
+type View = "dashboard" | "pos" | "products" | "categories" | "sales" | "bulk-products" | "import-csv" | "fast-sale" | "stock-adjustment" | "reports";
 
-const Index = () => {
-  const [currentView, setCurrentView] = useState<View>("pos");
+export default function Index() {
+  const [currentView, setCurrentView] = useState<View>("dashboard");
 
-  const renderView = () => {
+  const renderContent = () => {
     switch (currentView) {
+      case "dashboard":
+        return (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+              <p className="text-muted-foreground">
+                Visão geral do seu negócio
+              </p>
+            </div>
+            <DashboardStats />
+          </div>
+        );
       case "pos":
         return <POSView />;
       case "products":
         return <ProductsView />;
+      case "categories":
+        return <CategoriesView />;
+      case "sales":
+        return <SalesView />;
       case "bulk-products":
         return <BulkProductsView />;
       case "import-csv":
@@ -30,10 +48,6 @@ const Index = () => {
         return <FastSaleView />;
       case "stock-adjustment":
         return <StockAdjustmentView />;
-      case "categories":
-        return <CategoriesView />;
-      case "sales":
-        return <SalesView />;
       case "reports":
         return <ReportsView />;
       default:
@@ -43,14 +57,15 @@ const Index = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full bg-background">
         <AppSidebar currentView={currentView} onViewChange={setCurrentView} />
-        <main className="flex-1 p-4">
-          {renderView()}
-        </main>
+        <div className="flex-1 flex flex-col">
+          <Header />
+          <main className="flex-1 p-4 md:p-6 overflow-auto">
+            {renderContent()}
+          </main>
+        </div>
       </div>
     </SidebarProvider>
   );
-};
-
-export default Index;
+}

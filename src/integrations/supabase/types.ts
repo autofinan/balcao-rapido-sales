@@ -250,10 +250,7 @@ export type Database = {
       }
     }
     Functions: {
-      calculate_sale_profit: {
-        Args: { quantity: number; sale_price: number; unit_cost: number }
-        Returns: number
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

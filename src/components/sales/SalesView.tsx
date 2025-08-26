@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, Search, BarChart3, CreditCard, Banknote, Smartphone } from "lucide-react";
+import { CalendarIcon, Search, BarChart3, CreditCard, Banknote, Smartphone, Download } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
+import { exportSalesToCSV, ExportSale } from "@/utils/exportUtils";
+import { useToast } from "@/hooks/use-toast";
 
 interface Sale {
   id: string;
@@ -15,6 +18,8 @@ interface Sale {
   payment_method: "pix" | "cartao" | "dinheiro";
   note: string | null;
   created_at: string;
+  total_profit?: number;
+  profit_margin?: number;
 }
 
 const paymentMethodLabels = {
@@ -34,6 +39,7 @@ export function SalesView() {
   const [search, setSearch] = useState("");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchSales();
@@ -44,11 +50,36 @@ export function SalesView() {
       setLoading(true);
       const { data, error } = await supabase
         .from("sales")
-        .select("*")
+        .select(`
+          *,
+          sale_items (
+            quantity,
+            unit_price,
+            custo_unitario
+          )
+        `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setSales((data || []) as Sale[]);
+      
+      // Calculate profit for each sale
+      const salesWithProfit = (data || []).map(sale => {
+        let totalProfit = 0;
+        sale.sale_items?.forEach((item: any) => {
+          const profit = (Number(item.unit_price) - (Number(item.custo_unitario) || 0)) * Number(item.quantity);
+          totalProfit += profit;
+        });
+        
+        const profitMargin = Number(sale.total) > 0 ? (totalProfit / Number(sale.total)) * 100 : 0;
+        
+        return {
+          ...sale,
+          total_profit: totalProfit,
+          profit_margin: profitMargin
+        };
+      });
+      
+      setSales(salesWithProfit as Sale[]);
     } catch (error) {
       console.error("Erro ao carregar vendas:", error);
     } finally {
@@ -65,6 +96,36 @@ export function SalesView() {
   });
 
   const totalSales = filteredSales.reduce((sum, sale) => sum + Number(sale.total), 0);
+  const totalProfit = filteredSales.reduce((sum, sale) => sum + (sale.total_profit || 0), 0);
+
+  const handleExportCSV = async () => {
+    try {
+      const exportData: ExportSale[] = filteredSales.map(sale => ({
+        id: sale.id,
+        date: sale.date,
+        total: Number(sale.total),
+        payment_method: sale.payment_method,
+        note: sale.note,
+        total_profit: sale.total_profit || 0,
+        profit_margin: sale.profit_margin || 0,
+        created_at: sale.created_at
+      }));
+
+      exportSalesToCSV(exportData);
+      
+      toast({
+        title: "Exportação concluída",
+        description: "Dados de vendas exportados com sucesso!"
+      });
+    } catch (error) {
+      console.error("Erro ao exportar:", error);
+      toast({
+        title: "Erro na exportação",
+        description: "Não foi possível exportar os dados.",
+        variant: "destructive"
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -77,11 +138,15 @@ export function SalesView() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold">Vendas</h1>
+        <Button onClick={handleExportCSV} variant="outline" size="sm">
+          <Download className="mr-2 h-4 w-4" />
+          Exportar CSV
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="p-4">
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Total de Vendas</p>
@@ -91,8 +156,15 @@ export function SalesView() {
         
         <Card className="p-4">
           <div className="text-center">
-            <p className="text-sm text-muted-foreground">Valor Total</p>
+            <p className="text-sm text-muted-foreground">Receita Total</p>
             <p className="text-2xl font-bold">R$ {totalSales.toFixed(2)}</p>
+          </div>
+        </Card>
+        
+        <Card className="p-4">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">Lucro Total</p>
+            <p className="text-2xl font-bold text-green-600">R$ {totalProfit.toFixed(2)}</p>
           </div>
         </Card>
         
@@ -138,15 +210,15 @@ export function SalesView() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 overflow-x-auto">
           {filteredSales.map((sale) => {
             const PaymentIcon = paymentMethodIcons[sale.payment_method];
             
             return (
               <Card key={sale.id} className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-mono text-sm text-muted-foreground">
                         #{sale.id.slice(-8)}
                       </span>
@@ -161,14 +233,24 @@ export function SalesView() {
                     </p>
                     
                     {sale.note && (
-                      <p className="text-sm text-muted-foreground truncate">
+                      <p className="text-sm text-muted-foreground">
                         Obs: {sale.note}
                       </p>
                     )}
                   </div>
                   
-                  <div className="text-right">
+                  <div className="text-right space-y-1">
                     <p className="text-xl font-bold">R$ {Number(sale.total).toFixed(2)}</p>
+                    {sale.total_profit !== undefined && (
+                      <div className="space-y-1">
+                        <p className="text-sm text-green-600 font-medium">
+                          Lucro: R$ {sale.total_profit.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Margem: {sale.profit_margin?.toFixed(1)}%
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>

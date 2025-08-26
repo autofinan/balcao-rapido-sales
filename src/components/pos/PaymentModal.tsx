@@ -48,22 +48,36 @@ export function PaymentModal({ open, onOpenChange, total, cartItems, onComplete 
 
       if (saleError) throw saleError;
 
-      // Atualizar estoque dos produtos
+      // Registrar os itens da venda
       for (const item of cartItems) {
-        // Primeiro, buscar o estoque atual
+        // Primeiro, buscar o custo do produto
         const { data: productData, error: fetchError } = await supabase
           .from("products")
-          .select("stock")
+          .select("stock, cost")
           .eq("id", item.id)
           .single();
 
         if (fetchError) throw fetchError;
 
-        // Atualizar com o novo estoque
+        // Inserir o item da venda com o custo
+        const { error: itemError } = await supabase
+          .from("sale_items")
+          .insert({
+            sale_id: sale.id,
+            product_id: item.id,
+            quantity: item.quantity,
+            unit_price: item.price,
+            total_price: item.price * item.quantity,
+            custo_unitario: productData.cost || 0
+          });
+
+        if (itemError) throw itemError;
+
+        // Atualizar estoque
         const { error: updateError } = await supabase
           .from("products")
           .update({
-            stock: Math.max(0, productData.stock - item.quantity)
+            stock: Math.max(0, (productData.stock || 0) - item.quantity)
           })
           .eq("id", item.id);
 

@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Download } from "lucide-react";
 import { ProductForm } from "./ProductForm";
 import { ProductList } from "./ProductList";
 import { supabase } from "@/integrations/supabase/client";
+import { exportProductsToCSV, ExportProduct } from "@/utils/exportUtils";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Product {
   id: string;
@@ -28,6 +30,7 @@ export function ProductsView() {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchProducts();
@@ -68,6 +71,39 @@ export function ProductsView() {
     handleCloseForm();
   };
 
+  const handleExportCSV = async () => {
+    try {
+      const exportData: ExportProduct[] = filteredProducts.map(product => ({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: Number(product.price),
+        cost: product.cost ? Number(product.cost) : null,
+        stock: product.stock,
+        min_stock: product.min_stock,
+        sku: product.sku,
+        barcode: product.barcode,
+        category: product.categories?.name || null,
+        is_active: product.is_active,
+        created_at: new Date().toISOString()
+      }));
+
+      exportProductsToCSV(exportData);
+      
+      toast({
+        title: "Exportação concluída",
+        description: "Dados de produtos exportados com sucesso!"
+      });
+    } catch (error) {
+      console.error("Erro ao exportar:", error);
+      toast({
+        title: "Erro na exportação",
+        description: "Não foi possível exportar os dados.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(search.toLowerCase()) ||
     product.sku?.toLowerCase().includes(search.toLowerCase()) ||
@@ -76,12 +112,18 @@ export function ProductsView() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold">Produtos</h1>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Produto
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleExportCSV} variant="outline" size="sm">
+            <Download className="mr-2 h-4 w-4" />
+            Exportar CSV
+          </Button>
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Produto
+          </Button>
+        </div>
       </div>
 
       <div className="relative max-w-md">
