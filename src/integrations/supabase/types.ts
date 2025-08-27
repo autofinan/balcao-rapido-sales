@@ -14,21 +14,159 @@ export type Database = {
   }
   public: {
     Tables: {
+      _backup_inventory_movements: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          product_id: string | null
+          quantity: number | null
+          reason: string | null
+          type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          reason?: string | null
+          type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          reason?: string | null
+          type?: string | null
+        }
+        Relationships: []
+      }
+      _backup_products: {
+        Row: {
+          barcode: string | null
+          category_id: string | null
+          cost: number | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          image_url: string | null
+          is_active: boolean | null
+          min_stock: number | null
+          name: string | null
+          price: number | null
+          sku: string | null
+          stock: number | null
+        }
+        Insert: {
+          barcode?: string | null
+          category_id?: string | null
+          cost?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          min_stock?: number | null
+          name?: string | null
+          price?: number | null
+          sku?: string | null
+          stock?: number | null
+        }
+        Update: {
+          barcode?: string | null
+          category_id?: string | null
+          cost?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          min_stock?: number | null
+          name?: string | null
+          price?: number | null
+          sku?: string | null
+          stock?: number | null
+        }
+        Relationships: []
+      }
+      _backup_sale_items: {
+        Row: {
+          created_at: string | null
+          custo_unitario: number | null
+          id: string | null
+          product_id: string | null
+          quantity: number | null
+          sale_id: string | null
+          total_price: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          custo_unitario?: number | null
+          id?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          sale_id?: string | null
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          custo_unitario?: number | null
+          id?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          sale_id?: string | null
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Relationships: []
+      }
+      _backup_sales: {
+        Row: {
+          created_at: string | null
+          date: string | null
+          id: string | null
+          note: string | null
+          payment_method: string | null
+          total: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          date?: string | null
+          id?: string | null
+          note?: string | null
+          payment_method?: string | null
+          total?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string | null
+          id?: string | null
+          note?: string | null
+          payment_method?: string | null
+          total?: number | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string | null
           id: string
           name: string
+          owner_id: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
           name: string
+          owner_id?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
           name?: string
+          owner_id?: string | null
         }
         Relationships: []
       }
@@ -36,6 +174,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          owner_id: string | null
           product_id: string | null
           quantity: number
           reason: string | null
@@ -44,6 +183,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          owner_id?: string | null
           product_id?: string | null
           quantity: number
           reason?: string | null
@@ -52,6 +192,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          owner_id?: string | null
           product_id?: string | null
           quantity?: number
           reason?: string | null
@@ -72,6 +213,7 @@ export type Database = {
           barcode: string | null
           category_id: string | null
           cost: number | null
+          cost_unitario: number | null
           created_at: string | null
           description: string | null
           id: string
@@ -79,6 +221,7 @@ export type Database = {
           is_active: boolean | null
           min_stock: number | null
           name: string
+          owner_id: string | null
           price: number
           sku: string | null
           stock: number | null
@@ -87,6 +230,7 @@ export type Database = {
           barcode?: string | null
           category_id?: string | null
           cost?: number | null
+          cost_unitario?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -94,6 +238,7 @@ export type Database = {
           is_active?: boolean | null
           min_stock?: number | null
           name: string
+          owner_id?: string | null
           price: number
           sku?: string | null
           stock?: number | null
@@ -102,6 +247,7 @@ export type Database = {
           barcode?: string | null
           category_id?: string | null
           cost?: number | null
+          cost_unitario?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -109,6 +255,7 @@ export type Database = {
           is_active?: boolean | null
           min_stock?: number | null
           name?: string
+          owner_id?: string | null
           price?: number
           sku?: string | null
           stock?: number | null
@@ -155,6 +302,7 @@ export type Database = {
           created_at: string
           custo_unitario: number | null
           id: string
+          owner_id: string | null
           product_id: string | null
           quantity: number
           sale_id: string | null
@@ -165,6 +313,7 @@ export type Database = {
           created_at?: string
           custo_unitario?: number | null
           id?: string
+          owner_id?: string | null
           product_id?: string | null
           quantity: number
           sale_id?: string | null
@@ -175,6 +324,7 @@ export type Database = {
           created_at?: string
           custo_unitario?: number | null
           id?: string
+          owner_id?: string | null
           product_id?: string | null
           quantity?: number
           sale_id?: string | null
@@ -196,13 +346,6 @@ export type Database = {
             referencedRelation: "sales"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "sale_items_sale_id_fkey"
-            columns: ["sale_id"]
-            isOneToOne: false
-            referencedRelation: "sales_with_profit"
-            referencedColumns: ["id"]
-          },
         ]
       }
       sales: {
@@ -211,6 +354,7 @@ export type Database = {
           date: string
           id: string
           note: string | null
+          owner_id: string | null
           payment_method: string
           total: number
         }
@@ -219,6 +363,7 @@ export type Database = {
           date?: string
           id?: string
           note?: string | null
+          owner_id?: string | null
           payment_method: string
           total: number
         }
@@ -227,6 +372,7 @@ export type Database = {
           date?: string
           id?: string
           note?: string | null
+          owner_id?: string | null
           payment_method?: string
           total?: number
         }
@@ -234,23 +380,24 @@ export type Database = {
       }
     }
     Views: {
-      sales_with_profit: {
-        Row: {
-          created_at: string | null
-          date: string | null
-          id: string | null
-          note: string | null
-          payment_method: string | null
-          profit_margin_percentage: number | null
-          total: number | null
-          total_profit: number | null
-          total_revenue: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_sales_with_profit: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          date: string
+          id: string
+          note: string
+          owner_id: string
+          payment_method: string
+          profit_margin_percentage: number
+          total: number
+          total_profit: number
+          total_revenue: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
