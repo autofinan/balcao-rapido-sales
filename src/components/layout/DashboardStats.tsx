@@ -36,29 +36,16 @@ export function DashboardStats({ className }: DashboardStatsProps) {
         p.stock !== null && p.min_stock !== null && p.stock <= p.min_stock
       ).length || 0;
 
-      // Get sales data with profit calculations
-      const { data: salesData } = await supabase
-        .from('sales')
-        .select(`
-          total,
-          sale_items (
-            quantity,
-            unit_price,
-            custo_unitario
-          )
-        `);
+      // Get sales data with profit calculations using secure function
+      const { data: salesData } = await supabase.rpc('get_sales_with_profit');
 
       let totalRevenue = 0;
       let totalProfit = 0;
       const totalSales = salesData?.length || 0;
 
-      salesData?.forEach(sale => {
-        totalRevenue += Number(sale.total);
-        
-        sale.sale_items?.forEach(item => {
-          const profit = (Number(item.unit_price) - (Number(item.custo_unitario) || 0)) * Number(item.quantity);
-          totalProfit += profit;
-        });
+      salesData?.forEach((sale: any) => {
+        totalRevenue += Number(sale.total_revenue || 0);
+        totalProfit += Number(sale.total_profit || 0);
       });
 
       const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;

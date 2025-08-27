@@ -20,6 +20,9 @@ interface Sale {
   created_at: string;
   total_profit?: number;
   profit_margin?: number;
+  total_revenue?: number;
+  profit_margin_percentage?: number;
+  owner_id?: string;
 }
 
 const paymentMethodLabels = {
@@ -48,38 +51,14 @@ export function SalesView() {
   const fetchSales = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("sales")
-        .select(`
-          *,
-          sale_items (
-            quantity,
-            unit_price,
-            custo_unitario
-          )
-        `)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc('get_sales_with_profit');
 
       if (error) throw error;
       
-      // Calculate profit for each sale
-      const salesWithProfit = (data || []).map(sale => {
-        let totalProfit = 0;
-        sale.sale_items?.forEach((item: any) => {
-          const profit = (Number(item.unit_price) - (Number(item.custo_unitario) || 0)) * Number(item.quantity);
-          totalProfit += profit;
-        });
-        
-        const profitMargin = Number(sale.total) > 0 ? (totalProfit / Number(sale.total)) * 100 : 0;
-        
-        return {
-          ...sale,
-          total_profit: totalProfit,
-          profit_margin: profitMargin
-        };
-      });
-      
-      setSales(salesWithProfit as Sale[]);
+      setSales((data || []).map((sale: any) => ({
+        ...sale,
+        payment_method: sale.payment_method as "pix" | "cartao" | "dinheiro"
+      })));
     } catch (error) {
       console.error("Erro ao carregar vendas:", error);
     } finally {
@@ -247,7 +226,7 @@ export function SalesView() {
                           Lucro: R$ {sale.total_profit.toFixed(2)}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Margem: {sale.profit_margin?.toFixed(1)}%
+                          Margem: {(sale.profit_margin_percentage || sale.profit_margin || 0).toFixed(1)}%
                         </p>
                       </div>
                     )}
