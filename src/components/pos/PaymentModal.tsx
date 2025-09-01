@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { CreditCard, Banknote, Smartphone } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CreditCard, Banknote, Smartphone, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CartProduct } from "./POSView";
 import { useToast } from "@/hooks/use-toast";
@@ -17,12 +19,20 @@ interface PaymentModalProps {
   onComplete: () => void;
 }
 
+interface UserDiscountLimit {
+  max_discount_percentage: number;
+}
+
 type PaymentMethod = "pix" | "cartao" | "dinheiro";
 
 export function PaymentModal({ open, onOpenChange, total, cartItems, onComplete }: PaymentModalProps) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
+  const [discountType, setDiscountType] = useState<"percentage" | "fixed">("percentage");
+  const [discountValue, setDiscountValue] = useState(0);
+  const [userDiscountLimit, setUserDiscountLimit] = useState<UserDiscountLimit | null>(null);
+  const [discountError, setDiscountError] = useState("");
   const { toast } = useToast();
 
   const paymentMethods = [
@@ -31,15 +41,89 @@ export function PaymentModal({ open, onOpenChange, total, cartItems, onComplete 
     { id: "dinheiro" as PaymentMethod, label: "Dinheiro", icon: Banknote },
   ];
 
+  useEffect(() => {
+    if (open) {
+      fetchUserDiscountLimit();
+    }
+  }, [open]);
+
+  const fetchUserDiscountLimit = async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      const { data, error } = await supabase
+        .from("user_discount_limits")
+        .select("max_discount_percentage")
+        .eq("user_id", userData.user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error("Erro ao buscar limite de desconto:", error);
+        return;
+      }
+
+      setUserDiscountLimit(data || { max_discount_percentage: 10 });
+    } catch (error) {
+      console.error("Erro ao buscar limite de desconto:", error);
+    }
+  };
+
+  const validateDiscount = () => {
+    setDiscountError("");
+    
+    if (discountValue <= 0) return true;
+
+    if (discountType === "percentage") {
+      if (!userDiscountLimit) return true;
+      
+      if (discountValue > userDiscountLimit.max_discount_percentage) {
+        setDiscountError(`Desconto máximo permitido: ${userDiscountLimit.max_discount_percentage}%`);
+        return false;
+      }
+    } else {
+      if (discountValue >= total) {
+        setDiscountError("Desconto não pode ser maior ou igual ao total");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const calculateDiscount = () => {
+    if (discountValue <= 0) return 0;
+    
+    if (discountType === "percentage") {
+      return (total * discountValue) / 100;
+    }
+    return discountValue;
+  };
+
+  const calculateFinalTotal = () => {
+    return Math.max(0, total - calculateDiscount());
+  };
+
   const handleConfirmSale = async () => {
+    if (!validateDiscount()) {
+      return;
+    }
+
     try {
       setLoading(true);
+
+      const subtotal = total;
+      const discount = calculateDiscount();
+      const finalTotal = calculateFinalTotal();
 
       // Registrar a venda
       const { data: sale, error: saleError } = await supabase
         .from("sales")
         .insert({
-          total: total,
+          subtotal,
+          discount_type: discountValue > 0 ? discountType : null,
+          discount_value: discountValue,
+          total: finalTotal,
           payment_method: paymentMethod,
           note: note || null,
         })
@@ -86,12 +170,15 @@ export function PaymentModal({ open, onOpenChange, total, cartItems, onComplete 
 
       toast({
         title: "Venda finalizada",
-        description: `Venda de R$ ${total.toFixed(2)} registrada com sucesso!`
+        description: `Venda de R$ ${finalTotal.toFixed(2)} registrada com sucesso!`
       });
 
       onComplete();
       setNote("");
       setPaymentMethod("pix");
+      setDiscountValue(0);
+      setDiscountType("percentage");
+      setDiscountError("");
     } catch (error) {
       console.error("Erro ao finalizar venda:", error);
       toast({
@@ -113,8 +200,62 @@ export function PaymentModal({ open, onOpenChange, total, cartItems, onComplete 
         
         <div className="space-y-6">
           <div className="text-center">
-            <h3 className="text-2xl font-bold">R$ {total.toFixed(2)}</h3>
+            <div className="space-y-1">
+              <h3 className="text-2xl font-bold">R$ {total.toFixed(2)}</h3>
+              {discountValue > 0 && (
+                <div className="text-red-600">
+                  <p className="text-sm">Desconto: -R$ {calculateDiscount().toFixed(2)}</p>
+                  <p className="text-lg font-semibold">Total: R$ {calculateFinalTotal().toFixed(2)}</p>
+                </div>
+              )}
+            </div>
             <p className="text-muted-foreground">{cartItems.length} itens</p>
+          </div>
+
+          {/* Desconto */}
+          <div className="space-y-4">
+            <Label>Desconto</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
+                <Select value={discountType} onValueChange={(value: "percentage" | "fixed") => setDiscountType(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percentage">Porcentagem (%)</SelectItem>
+                    <SelectItem value="fixed">Valor Fixo (R$)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Input
+                  type="number"
+                  min="0"
+                  max={discountType === "percentage" ? (userDiscountLimit?.max_discount_percentage || 100) : total}
+                  step="0.01"
+                  value={discountValue}
+                  onChange={(e) => {
+                    setDiscountValue(Number(e.target.value));
+                    setDiscountError("");
+                  }}
+                  placeholder={discountType === "percentage" ? "%" : "R$"}
+                />
+              </div>
+            </div>
+            
+            {discountError && (
+              <div className="flex items-center gap-2 text-red-600 text-sm">
+                <AlertTriangle className="h-4 w-4" />
+                <span>{discountError}</span>
+              </div>
+            )}
+            
+            {userDiscountLimit && (
+              <p className="text-xs text-muted-foreground">
+                Limite máximo: {userDiscountLimit.max_discount_percentage}%
+              </p>
+            )}
           </div>
 
           <div className="space-y-3">
@@ -162,7 +303,7 @@ export function PaymentModal({ open, onOpenChange, total, cartItems, onComplete 
             <Button
               onClick={handleConfirmSale}
               className="flex-1"
-              disabled={loading}
+              disabled={loading || !!discountError}
             >
               {loading ? "Processando..." : "Confirmar Venda"}
             </Button>

@@ -1,7 +1,7 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { Calculator, Package, FolderTree, BarChart3, Upload, Download, Zap, Settings, TrendingUp, Home } from "lucide-react";
+import { Calculator, Package, FolderTree, BarChart3, Upload, Download, Zap, Settings, TrendingUp, Home, FileText } from "lucide-react";
 
-type View = "dashboard" | "pos" | "products" | "categories" | "sales" | "bulk-products" | "import-csv" | "fast-sale" | "stock-adjustment" | "reports";
+type View = "dashboard" | "pos" | "products" | "categories" | "sales" | "bulk-products" | "import-csv" | "fast-sale" | "stock-adjustment" | "reports" | "budgets";
 
 interface AppSidebarProps {
   currentView: View;
@@ -18,6 +18,11 @@ const menuItems = [
     id: "pos" as View,
     title: "PDV",
     icon: Calculator,
+  },
+  {
+    id: "budgets" as View,
+    title: "Orçamentos",
+    icon: FileText,
   },
   {
     id: "products" as View,

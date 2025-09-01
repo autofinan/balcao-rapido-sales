@@ -6,14 +6,15 @@ import { DashboardStats } from "@/components/layout/DashboardStats";
 import { ProductsView } from "@/components/products/ProductsView";
 import { POSView } from "@/components/pos/POSView";
 import { CategoriesView } from "@/components/categories/CategoriesView";
-import { SalesView } from "@/components/sales/SalesView";
+import { SalesView } from "@/components/sales/SalesViewEnhanced";
 import { BulkProductsView } from "@/components/products/BulkProductsView";
 import { ImportCSVView } from "@/components/products/ImportCSVView";
 import { FastSaleView } from "@/components/sales/FastSaleView";
 import { StockAdjustmentView } from "@/components/inventory/StockAdjustmentView";
 import { ReportsView } from "@/components/reports/ReportsView";
+import { BudgetsView } from "@/components/budgets/BudgetsView";
 
-type View = "dashboard" | "pos" | "products" | "categories" | "sales" | "bulk-products" | "import-csv" | "fast-sale" | "stock-adjustment" | "reports";
+type View = "dashboard" | "pos" | "products" | "categories" | "sales" | "bulk-products" | "import-csv" | "fast-sale" | "stock-adjustment" | "reports" | "budgets";
 
 export default function Index() {
   const [currentView, setCurrentView] = useState<View>("dashboard");
@@ -50,6 +51,8 @@ export default function Index() {
         return <StockAdjustmentView />;
       case "reports":
         return <ReportsView />;
+      case "budgets":
+        return <BudgetsView />;
       default:
         return <POSView />;
     }

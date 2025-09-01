@@ -149,6 +149,102 @@ export type Database = {
         }
         Relationships: []
       }
+      budget_items: {
+        Row: {
+          budget_id: string
+          created_at: string
+          id: string
+          owner_id: string | null
+          product_id: string
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          budget_id: string
+          created_at?: string
+          id?: string
+          owner_id?: string | null
+          product_id: string
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          budget_id?: string
+          created_at?: string
+          id?: string
+          owner_id?: string | null
+          product_id?: string
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: []
+      }
+      budgets: {
+        Row: {
+          cancel_reason: string | null
+          canceled_at: string | null
+          canceled_by: string | null
+          converted_sale_id: string | null
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          discount_type: string | null
+          discount_value: number | null
+          id: string
+          notes: string | null
+          owner_id: string
+          status: Database["public"]["Enums"]["budget_status"]
+          subtotal: number
+          total: number
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          cancel_reason?: string | null
+          canceled_at?: string | null
+          canceled_by?: string | null
+          converted_sale_id?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          id?: string
+          notes?: string | null
+          owner_id: string
+          status?: Database["public"]["Enums"]["budget_status"]
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          cancel_reason?: string | null
+          canceled_at?: string | null
+          canceled_by?: string | null
+          converted_sale_id?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          status?: Database["public"]["Enums"]["budget_status"]
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string | null
@@ -350,31 +446,79 @@ export type Database = {
       }
       sales: {
         Row: {
+          cancel_reason: string | null
+          canceled: boolean | null
+          canceled_at: string | null
+          canceled_by: string | null
           created_at: string
           date: string
+          discount_type: string | null
+          discount_value: number | null
           id: string
           note: string | null
           owner_id: string | null
           payment_method: string
+          subtotal: number | null
           total: number
         }
         Insert: {
+          cancel_reason?: string | null
+          canceled?: boolean | null
+          canceled_at?: string | null
+          canceled_by?: string | null
           created_at?: string
           date?: string
+          discount_type?: string | null
+          discount_value?: number | null
           id?: string
           note?: string | null
           owner_id?: string | null
           payment_method: string
+          subtotal?: number | null
           total: number
         }
         Update: {
+          cancel_reason?: string | null
+          canceled?: boolean | null
+          canceled_at?: string | null
+          canceled_by?: string | null
           created_at?: string
           date?: string
+          discount_type?: string | null
+          discount_value?: number | null
           id?: string
           note?: string | null
           owner_id?: string | null
           payment_method?: string
+          subtotal?: number | null
           total?: number
+        }
+        Relationships: []
+      }
+      user_discount_limits: {
+        Row: {
+          created_at: string
+          id: string
+          max_discount_percentage: number
+          owner_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_discount_percentage?: number
+          owner_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_discount_percentage?: number
+          owner_id?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -383,6 +527,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_sale: {
+        Args: { reason?: string; sale_id_param: string }
+        Returns: boolean
+      }
+      convert_budget_to_sale: {
+        Args: { budget_id_param: string }
+        Returns: string
+      }
       get_sales_with_profit: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -400,7 +552,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      budget_status: "open" | "converted" | "canceled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -527,6 +679,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      budget_status: ["open", "converted", "canceled"],
+    },
   },
 } as const
