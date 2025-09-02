@@ -556,6 +556,10 @@ export type Database = {
           total_revenue: number
         }[]
       }
+      validate_budget_owner: {
+        Args: { budget_id_param: string }
+        Returns: boolean
+      }
     }
     Enums: {
       budget_status: "open" | "converted" | "canceled"
