@@ -134,7 +134,7 @@ export function BudgetForm({ open, onOpenChange, onSave }: BudgetFormProps) {
       const discount = calculateDiscount();
       const total = calculateTotal();
 
-      // Criar orçamento (owner_id será definido automaticamente pelo trigger)
+      // Criar orçamento 
       const { data: budget, error: budgetError } = await supabase
         .from("budgets")
         .insert({
@@ -147,7 +147,7 @@ export function BudgetForm({ open, onOpenChange, onSave }: BudgetFormProps) {
           total,
           notes: notes || null,
           valid_until: validUntil || null
-        })
+        } as any)
         .select()
         .single();
 
