@@ -49,13 +49,7 @@ export function SalesView() {
 
       if (error) throw error;
 
-      setSales((data || []).map(sale => ({
-        ...sale,
-        canceled: sale.canceled || false,
-        subtotal: sale.subtotal || sale.total,
-        discount_type: sale.discount_type || null,
-        discount_value: sale.discount_value || 0
-      })));
+      setSales(data || []);
     } catch (error) {
       console.error("Erro ao buscar vendas:", error);
       toast({

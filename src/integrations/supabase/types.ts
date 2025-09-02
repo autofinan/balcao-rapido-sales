@@ -538,13 +538,19 @@ export type Database = {
       get_sales_with_profit: {
         Args: Record<PropertyKey, never>
         Returns: {
+          cancel_reason: string
+          canceled: boolean
+          canceled_at: string
           created_at: string
           date: string
+          discount_type: string
+          discount_value: number
           id: string
           note: string
           owner_id: string
           payment_method: string
           profit_margin_percentage: number
+          subtotal: number
           total: number
           total_profit: number
           total_revenue: number
