@@ -535,6 +535,29 @@ export type Database = {
         Args: { budget_id_param: string }
         Returns: string
       }
+      get_budget_with_protected_customer_data: {
+        Args: { budget_id_param: string }
+        Returns: {
+          cancel_reason: string
+          canceled_at: string
+          canceled_by: string
+          converted_sale_id: string
+          created_at: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          discount_type: string
+          discount_value: number
+          id: string
+          notes: string
+          owner_id: string
+          status: Database["public"]["Enums"]["budget_status"]
+          subtotal: number
+          total: number
+          updated_at: string
+          valid_until: string
+        }[]
+      }
       get_sales_with_profit: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -554,6 +577,16 @@ export type Database = {
           total: number
           total_profit: number
           total_revenue: number
+        }[]
+      }
+      search_budgets_safe: {
+        Args: { search_term?: string }
+        Returns: {
+          created_at: string
+          has_customer_info: boolean
+          id: string
+          status: Database["public"]["Enums"]["budget_status"]
+          total: number
         }[]
       }
       validate_budget_owner: {

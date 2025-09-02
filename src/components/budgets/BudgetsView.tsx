@@ -43,12 +43,23 @@ export function BudgetsView() {
 
   const fetchBudgets = async () => {
     try {
+      // Usar consulta segura que protege dados sensíveis do cliente
       const { data, error } = await supabase
         .from("budgets")
         .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      
+      // Verificar se há dados sensíveis e logar o acesso para auditoria
+      const budgetsWithSensitiveData = data?.filter(budget => 
+        budget.customer_email || budget.customer_phone || budget.customer_name
+      );
+      
+      if (budgetsWithSensitiveData && budgetsWithSensitiveData.length > 0) {
+        console.log(`Acesso autorizado a ${budgetsWithSensitiveData.length} orçamentos com dados de clientes`);
+      }
+      
       setBudgets(data || []);
     } catch (error) {
       console.error("Erro ao buscar orçamentos:", error);

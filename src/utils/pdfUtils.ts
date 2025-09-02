@@ -26,6 +26,14 @@ interface Budget {
 
 export const generateBudgetPDF = async (budget: Budget) => {
   try {
+    // Validar acesso ao orçamento usando função de segurança
+    const { data: isValid, error: validationError } = await supabase
+      .rpc('validate_budget_owner', { budget_id_param: budget.id });
+    
+    if (validationError || !isValid) {
+      throw new Error('Acesso negado: você não tem permissão para gerar PDF deste orçamento');
+    }
+
     // Buscar itens do orçamento
     const { data: items, error } = await supabase
       .from('budget_items')
