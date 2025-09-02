@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { BudgetForm } from "./BudgetForm";
 import { BudgetDetails } from "./BudgetDetails";
+import { generateBudgetPDF } from "@/utils/pdfUtils";
 
 interface Budget {
   id: string;
@@ -109,6 +110,23 @@ export function BudgetsView() {
       toast({
         title: "Erro",
         description: "Erro ao cancelar orçamento",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleGeneratePDF = async (budget: Budget) => {
+    try {
+      await generateBudgetPDF(budget);
+      toast({
+        title: "Sucesso",
+        description: "PDF do orçamento gerado com sucesso!"
+      });
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao gerar PDF do orçamento",
         variant: "destructive"
       });
     }
@@ -248,7 +266,11 @@ export function BudgetsView() {
                     </>
                   )}
                   
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleGeneratePDF(budget)}
+                  >
                     <FileText className="h-4 w-4 mr-1" />
                     PDF
                   </Button>
