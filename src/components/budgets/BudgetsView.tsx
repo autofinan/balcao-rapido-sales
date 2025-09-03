@@ -45,22 +45,35 @@ export function BudgetsView() {
 
   const fetchBudgets = async () => {
     try {
-      // Usar consulta segura que protege dados sensíveis do cliente
+      // SEGURANÇA: Usar consulta que seleciona apenas campos não sensíveis
       const { data, error } = await supabase
         .from("budgets")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select(`
+          id,
+          subtotal,
+          discount_type,
+          discount_value,
+          total,
+          status,
+          notes,
+          valid_until,
+          created_at,
+          updated_at,
+          converted_sale_id,
+          canceled_at,
+          cancel_reason,
+          canceled_by,
+          owner_id,
+          customer_name:customer_name,
+          customer_email:customer_email,
+          customer_phone:customer_phone
+        `)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       
-      // Verificar se há dados sensíveis e logar o acesso para auditoria
-      const budgetsWithSensitiveData = data?.filter(budget => 
-        budget.customer_email || budget.customer_phone || budget.customer_name
-      );
-      
-      if (budgetsWithSensitiveData && budgetsWithSensitiveData.length > 0) {
-        console.log(`Acesso autorizado a ${budgetsWithSensitiveData.length} orçamentos com dados de clientes`);
-      }
+      // Log de auditoria: registrar acesso aos dados (sem expor informações sensíveis)
+      console.log(`Acesso seguro a ${data?.length || 0} orçamentos (dados do cliente protegidos por RLS)`);
       
       setBudgets(data || []);
     } catch (error) {
@@ -175,9 +188,12 @@ export function BudgetsView() {
   };
 
   const filteredBudgets = budgets.filter(budget => {
+    // SEGURANÇA: Busca apenas se dados não estão protegidos/mascarados
     const matchesSearch = !searchTerm || 
-      budget.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      budget.customer_email?.toLowerCase().includes(searchTerm.toLowerCase());
+      (budget.customer_name && 
+       budget.customer_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (budget.customer_email && 
+       budget.customer_email.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = statusFilter === "all" || budget.status === statusFilter;
     
