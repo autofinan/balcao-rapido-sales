@@ -35,6 +35,8 @@ export function BudgetsView() {
   const [showDetails, setShowDetails] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [convertingBudgets, setConvertingBudgets] = useState<Set<string>>(new Set());
+  const [generatingPdfs, setGeneratingPdfs] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -74,6 +76,8 @@ export function BudgetsView() {
   };
 
   const handleConvertToSale = async (budgetId: string) => {
+    setConvertingBudgets(prev => new Set(prev).add(budgetId));
+    
     try {
       const { data, error } = await supabase.rpc("convert_budget_to_sale", {
         budget_id_param: budgetId
@@ -82,17 +86,23 @@ export function BudgetsView() {
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
-        description: "Orçamento convertido em venda com sucesso!"
+        title: "✅ Sucesso!",
+        description: "Orçamento convertido em venda com sucesso! A venda foi criada e o orçamento marcado como convertido.",
       });
 
       fetchBudgets();
     } catch (error) {
       console.error("Erro ao converter orçamento:", error);
       toast({
-        title: "Erro",
-        description: "Erro ao converter orçamento em venda",
+        title: "❌ Erro",
+        description: error instanceof Error ? error.message : "Erro ao converter orçamento em venda",
         variant: "destructive"
+      });
+    } finally {
+      setConvertingBudgets(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(budgetId);
+        return newSet;
       });
     }
   };
@@ -127,18 +137,26 @@ export function BudgetsView() {
   };
 
   const handleGeneratePDF = async (budget: Budget) => {
+    setGeneratingPdfs(prev => new Set(prev).add(budget.id));
+    
     try {
       await generateBudgetPDF(budget);
       toast({
-        title: "Sucesso",
-        description: "PDF do orçamento gerado com sucesso!"
+        title: "📄 PDF Gerado!",
+        description: "PDF do orçamento baixado com sucesso! Verifique sua pasta de downloads.",
       });
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
       toast({
-        title: "Erro",
-        description: "Erro ao gerar PDF do orçamento",
+        title: "❌ Erro",
+        description: error instanceof Error ? error.message : "Erro ao gerar PDF do orçamento",
         variant: "destructive"
+      });
+    } finally {
+      setGeneratingPdfs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(budget.id);
+        return newSet;
       });
     }
   };
@@ -262,14 +280,25 @@ export function BudgetsView() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleConvertToSale(budget.id)}
+                        disabled={convertingBudgets.has(budget.id)}
                       >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Converter em Venda
+                        {convertingBudgets.has(budget.id) ? (
+                          <>
+                            <div className="animate-spin h-4 w-4 mr-1 rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                            Convertendo...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Converter em Venda
+                          </>
+                        )}
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleCancelBudget(budget.id)}
+                        disabled={convertingBudgets.has(budget.id)}
                       >
                         <X className="h-4 w-4 mr-1" />
                         Cancelar
@@ -281,9 +310,19 @@ export function BudgetsView() {
                     variant="outline" 
                     size="sm"
                     onClick={() => handleGeneratePDF(budget)}
+                    disabled={generatingPdfs.has(budget.id)}
                   >
-                    <FileText className="h-4 w-4 mr-1" />
-                    PDF
+                    {generatingPdfs.has(budget.id) ? (
+                      <>
+                        <div className="animate-spin h-4 w-4 mr-1 rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                        Gerando...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-4 w-4 mr-1" />
+                        PDF
+                      </>
+                    )}
                   </Button>
                 </div>
               </CardContent>
