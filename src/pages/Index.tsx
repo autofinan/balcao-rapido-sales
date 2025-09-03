@@ -2,11 +2,11 @@ import { useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Header } from "@/components/layout/Header";
-import { DashboardStats } from "@/components/layout/DashboardStats";
+import { DashboardStatsInteractive } from "@/components/layout/DashboardStatsInteractive";
 import { ProductsView } from "@/components/products/ProductsView";
 import { POSView } from "@/components/pos/POSView";
 import { CategoriesView } from "@/components/categories/CategoriesView";
-import { SalesView } from "@/components/sales/SalesViewEnhanced";
+import { SalesViewEnhanced } from "@/components/sales/SalesViewEnhanced";
 import { BulkProductsView } from "@/components/products/BulkProductsView";
 import { ImportCSVView } from "@/components/products/ImportCSVView";
 import { FastSaleView } from "@/components/sales/FastSaleView";
@@ -30,7 +30,7 @@ export default function Index() {
                 Visão geral do seu negócio
               </p>
             </div>
-            <DashboardStats />
+            <DashboardStatsInteractive />
           </div>
         );
       case "pos":
@@ -40,7 +40,7 @@ export default function Index() {
       case "categories":
         return <CategoriesView />;
       case "sales":
-        return <SalesView />;
+        return <SalesViewEnhanced />;
       case "bulk-products":
         return <BulkProductsView />;
       case "import-csv":

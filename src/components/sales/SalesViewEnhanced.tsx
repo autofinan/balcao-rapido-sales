@@ -3,14 +3,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Download, Search, BarChart2, X } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Search, 
+  Eye, 
+  Download, 
+  CreditCard, 
+  Banknote, 
+  Smartphone,
+  CheckCircle,
+  X,
+  RotateCcw
+} from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
+import { exportSalesToCSV, ExportSale } from "@/utils/exportUtils";
 import { useToast } from "@/hooks/use-toast";
-import { exportSalesToCSV } from "@/utils/exportUtils";
-import { CancelSaleModal } from "./CancelSaleModal";
 
 interface Sale {
   id: string;
@@ -19,24 +30,50 @@ interface Sale {
   subtotal?: number;
   discount_type?: string;
   discount_value?: number;
-  payment_method: string;
-  note?: string;
-  canceled: boolean;
-  canceled_at?: string;
+  payment_method: "pix" | "cartao" | "dinheiro" | "pending";
+  note: string | null;
+  created_at: string;
+  total_profit?: number;
+  profit_margin_percentage?: number;
+  canceled?: boolean;
   cancel_reason?: string;
-  total_revenue: number;
-  total_profit: number;
-  profit_margin_percentage: number;
+  canceled_at?: string;
+  owner_id?: string;
 }
 
-export function SalesView() {
+interface SaleItem {
+  id: string;
+  product_id: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  product_name?: string;
+}
+
+const paymentMethodLabels = {
+  pix: "PIX",
+  cartao: "Cartão",
+  dinheiro: "Dinheiro",
+  pending: "Pendente"
+};
+
+const paymentMethodIcons = {
+  pix: Smartphone,
+  cartao: CreditCard,
+  dinheiro: Banknote,
+  pending: RotateCcw
+};
+
+export function SalesViewEnhanced() {
   const [sales, setSales] = useState<Sale[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [paymentFilter, setPaymentFilter] = useState("all");
-  const [showCanceled, setShowCanceled] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
+  const [showDetails, setShowDetails] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [paymentFilter, setPaymentFilter] = useState<string>("all");
+  const [loading, setLoading] = useState(true);
+  const [loadingItems, setLoadingItems] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -45,13 +82,17 @@ export function SalesView() {
 
   const fetchSales = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase.rpc('get_sales_with_profit');
 
       if (error) throw error;
-
-      setSales(data || []);
+      
+      setSales((data || []).map((sale: any) => ({
+        ...sale,
+        payment_method: sale.payment_method as "pix" | "cartao" | "dinheiro" | "pending"
+      })));
     } catch (error) {
-      console.error("Erro ao buscar vendas:", error);
+      console.error("Erro ao carregar vendas:", error);
       toast({
         title: "Erro",
         description: "Erro ao carregar vendas",
@@ -62,36 +103,87 @@ export function SalesView() {
     }
   };
 
+  const fetchSaleItems = async (saleId: string) => {
+    try {
+      setLoadingItems(true);
+      const { data, error } = await supabase
+        .from("sale_items")
+        .select(`
+          id,
+          product_id,
+          quantity,
+          unit_price,
+          total_price,
+          products (
+            name
+          )
+        `)
+        .eq("sale_id", saleId);
+
+      if (error) throw error;
+      
+      setSaleItems((data || []).map((item: any) => ({
+        ...item,
+        product_name: item.products?.name || "Produto não encontrado"
+      })));
+    } catch (error) {
+      console.error("Erro ao carregar itens da venda:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar itens da venda",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingItems(false);
+    }
+  };
+
+  const handleViewDetails = async (sale: Sale) => {
+    setSelectedSale(sale);
+    setShowDetails(true);
+    await fetchSaleItems(sale.id);
+  };
+
   const filteredSales = sales.filter(sale => {
-    const matchesSearch = !searchTerm || 
-      sale.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sale.payment_method.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (sale.note && sale.note.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesSearch = !search || 
+      sale.id.toLowerCase().includes(search.toLowerCase()) ||
+      sale.note?.toLowerCase().includes(search.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || 
+      (statusFilter === "completed" && !sale.canceled) ||
+      (statusFilter === "canceled" && sale.canceled) ||
+      (statusFilter === "converted" && sale.note?.includes("Convertido do orçamento"));
     
     const matchesPayment = paymentFilter === "all" || sale.payment_method === paymentFilter;
-    const matchesCanceled = showCanceled || !sale.canceled;
     
-    return matchesSearch && matchesPayment && matchesCanceled;
+    return matchesSearch && matchesStatus && matchesPayment;
   });
 
-  const totalSales = filteredSales.reduce((sum, sale) => sum + sale.total, 0);
-  const totalProfit = filteredSales.reduce((sum, sale) => sum + sale.total_profit, 0);
+  const getStatusBadge = (sale: Sale) => {
+    if (sale.canceled) {
+      return <Badge variant="destructive">Cancelada</Badge>;
+    }
+    if (sale.note?.includes("Convertido do orçamento")) {
+      return <Badge variant="secondary">Orçamento Convertido</Badge>;
+    }
+    return <Badge variant="default">Concluída</Badge>;
+  };
 
   const handleExportCSV = async () => {
     try {
-      const exportData = filteredSales.map(sale => ({
+      const exportData: ExportSale[] = filteredSales.map(sale => ({
         id: sale.id,
         date: sale.date,
-        total: sale.total,
+        total: Number(sale.total),
         payment_method: sale.payment_method,
-        note: sale.note || '',
-        created_at: sale.date,
-        total_profit: sale.total_profit,
-        profit_margin: sale.profit_margin_percentage
+        note: sale.note,
+        total_profit: sale.total_profit || 0,
+        profit_margin: sale.profit_margin_percentage || 0,
+        created_at: sale.created_at
       }));
 
       exportSalesToCSV(exportData);
-
+      
       toast({
         title: "Exportação concluída",
         description: "Dados de vendas exportados com sucesso!"
@@ -106,10 +198,20 @@ export function SalesView() {
     }
   };
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const totalSales = filteredSales.reduce((sum, sale) => sum + Number(sale.total), 0);
+  const totalProfit = filteredSales.reduce((sum, sale) => sum + (sale.total_profit || 0), 0);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <BarChart2 className="h-8 w-8 animate-spin" />
+        <div className="text-muted-foreground">Carregando vendas...</div>
       </div>
     );
   }
@@ -119,7 +221,7 @@ export function SalesView() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Vendas</h1>
-          <p className="text-muted-foreground">Histórico e gestão de vendas</p>
+          <p className="text-muted-foreground">Gerencie e analise suas vendas</p>
         </div>
         <Button onClick={handleExportCSV} variant="outline">
           <Download className="h-4 w-4 mr-2" />
@@ -127,184 +229,272 @@ export function SalesView() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Vendas</CardTitle>
-            <BarChart2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{filteredSales.length}</div>
-          </CardContent>
+      {/* Summary Cards */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="p-4">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">Total de Vendas</p>
+            <p className="text-2xl font-bold">{filteredSales.length}</p>
+          </div>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-            <BarChart2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">R$ {totalSales.toFixed(2)}</div>
-          </CardContent>
+        
+        <Card className="p-4">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">Receita Total</p>
+            <p className="text-2xl font-bold">{formatCurrency(totalSales)}</p>
+          </div>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Lucro Total</CardTitle>
-            <BarChart2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">R$ {totalProfit.toFixed(2)}</div>
-          </CardContent>
+        
+        <Card className="p-4">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">Lucro Total</p>
+            <p className="text-2xl font-bold text-green-600">{formatCurrency(totalProfit)}</p>
+          </div>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
-            <BarChart2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              R$ {filteredSales.length > 0 ? (totalSales / filteredSales.length).toFixed(2) : "0.00"}
-            </div>
-          </CardContent>
+        
+        <Card className="p-4">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">Ticket Médio</p>
+            <p className="text-2xl font-bold">
+              {formatCurrency(filteredSales.length > 0 ? totalSales / filteredSales.length : 0)}
+            </p>
+          </div>
         </Card>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4 items-center">
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Buscar vendas..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar por ID ou observações..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
           />
         </div>
-
-        <div className="flex gap-4 items-center">
-          <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Forma de pagamento" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="pix">PIX</SelectItem>
-              <SelectItem value="cartao">Cartão</SelectItem>
-              <SelectItem value="dinheiro">Dinheiro</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="show-canceled"
-              checked={showCanceled}
-              onCheckedChange={setShowCanceled}
-            />
-            <Label htmlFor="show-canceled">Mostrar canceladas</Label>
-          </div>
-        </div>
+        
+        <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-auto">
+          <TabsList>
+            <TabsTrigger value="all">Todas</TabsTrigger>
+            <TabsTrigger value="completed">Concluídas</TabsTrigger>
+            <TabsTrigger value="canceled">Canceladas</TabsTrigger>
+            <TabsTrigger value="converted">Orçamentos Convertidos</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        
+        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Filtrar por pagamento" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os métodos</SelectItem>
+            <SelectItem value="pix">PIX</SelectItem>
+            <SelectItem value="cartao">Cartão</SelectItem>
+            <SelectItem value="dinheiro">Dinheiro</SelectItem>
+            <SelectItem value="pending">Pendente</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Sales List */}
-      {filteredSales.length === 0 ? (
-        <Card>
-          <CardContent className="flex items-center justify-center h-32">
-            <p className="text-muted-foreground">Nenhuma venda encontrada</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {filteredSales.map((sale) => (
-            <Card key={sale.id}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold">Venda #{sale.id.slice(0, 8)}</p>
-                      {sale.canceled && <Badge variant="destructive">Cancelada</Badge>}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>{new Date(sale.date).toLocaleDateString()}</span>
-                      <Badge variant="outline">{sale.payment_method}</Badge>
-                    </div>
-                  </div>
-                  <div className="text-right">
+      <div className="space-y-4">
+        {filteredSales.length === 0 ? (
+          <Card>
+            <CardContent className="flex items-center justify-center h-32">
+              <p className="text-muted-foreground">Nenhuma venda encontrada</p>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredSales.map((sale) => {
+            const PaymentIcon = paymentMethodIcons[sale.payment_method];
+            
+            return (
+              <Card key={sale.id}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      {sale.subtotal && sale.discount_value && sale.discount_value > 0 && (
-                        <div className="text-sm text-muted-foreground">
-                          Subtotal: R$ {sale.subtotal.toFixed(2)}
-                          <br />
-                          Desconto: -{sale.discount_type === 'percentage' ? `${sale.discount_value}%` : `R$ ${sale.discount_value.toFixed(2)}`}
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm text-muted-foreground">
+                          #{sale.id.slice(-8)}
+                        </span>
+                        {getStatusBadge(sale)}
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <PaymentIcon className="h-3 w-3" />
+                          {paymentMethodLabels[sale.payment_method]}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(sale.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      </p>
+                      {sale.note && (
+                        <p className="text-sm text-muted-foreground">
+                          Obs: {sale.note}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold">{formatCurrency(Number(sale.total))}</div>
+                      {sale.total_profit !== undefined && (
+                        <div className="text-sm">
+                          <div className="text-green-600 font-medium">
+                            Lucro: {formatCurrency(sale.total_profit)}
+                          </div>
+                          <div className="text-muted-foreground">
+                            Margem: {(sale.profit_margin_percentage || 0).toFixed(1)}%
+                          </div>
                         </div>
                       )}
-                      <p className={`text-2xl font-bold ${sale.canceled ? 'line-through text-muted-foreground' : ''}`}>
-                        R$ {sale.total.toFixed(2)}
-                      </p>
-                      {!sale.canceled && (
-                        <p className="text-sm text-green-600">
-                          Lucro: R$ {sale.total_profit.toFixed(2)} ({sale.profit_margin_percentage.toFixed(1)}%)
-                        </p>
-                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewDetails(sale)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Ver Detalhes
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </div>
+
+      {/* Sale Details Modal */}
+      {showDetails && selectedSale && (
+        <Dialog open={showDetails} onOpenChange={setShowDetails}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                Detalhes da Venda #{selectedSale.id.slice(-8)}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Sale Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-medium mb-2">Informações da Venda</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Data:</span>
+                      <span>{format(new Date(selectedSale.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Status:</span>
+                      {getStatusBadge(selectedSale)}
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Pagamento:</span>
+                      <span>{paymentMethodLabels[selectedSale.payment_method]}</span>
                     </div>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {sale.note && (
-                    <p className="text-sm text-muted-foreground">{sale.note}</p>
-                  )}
-                  
-                  {sale.canceled && sale.cancel_reason && (
-                    <div className="p-2 bg-destructive/10 rounded text-sm">
-                      <p className="font-medium text-destructive">Motivo do cancelamento:</p>
-                      <p className="text-muted-foreground">{sale.cancel_reason}</p>
-                      {sale.canceled_at && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Cancelada em: {new Date(sale.canceled_at).toLocaleString()}
-                        </p>
-                      )}
+                
+                <div>
+                  <h4 className="font-medium mb-2">Valores</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Subtotal:</span>
+                      <span>{formatCurrency(Number(selectedSale.subtotal || selectedSale.total))}</span>
                     </div>
-                  )}
-                  
-                  {!sale.canceled && (
-                    <div className="flex justify-end">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedSale(sale);
-                          setCancelModalOpen(true);
-                        }}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Cancelar
-                      </Button>
+                    {selectedSale.discount_value && selectedSale.discount_value > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Desconto:</span>
+                        <span>
+                          {selectedSale.discount_type === 'percentage' 
+                            ? `${selectedSale.discount_value}%` 
+                            : formatCurrency(selectedSale.discount_value)
+                          }
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-medium">
+                      <span>Total:</span>
+                      <span>{formatCurrency(Number(selectedSale.total))}</span>
                     </div>
-                  )}
+                    {selectedSale.total_profit !== undefined && (
+                      <>
+                        <div className="flex justify-between text-green-600">
+                          <span>Lucro:</span>
+                          <span>{formatCurrency(selectedSale.total_profit)}</span>
+                        </div>
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Margem:</span>
+                          <span>{(selectedSale.profit_margin_percentage || 0).toFixed(1)}%</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+              </div>
 
-      {selectedSale && (
-        <CancelSaleModal
-          open={cancelModalOpen}
-          onOpenChange={setCancelModalOpen}
-          saleId={selectedSale.id}
-          saleTotal={selectedSale.total}
-          onCancel={() => {
-            setCancelModalOpen(false);
-            setSelectedSale(null);
-            fetchSales();
-          }}
-        />
+              {/* Sale Items */}
+              <div>
+                <h4 className="font-medium mb-3">Itens da Venda</h4>
+                {loadingItems ? (
+                  <div className="text-center py-4">
+                    <div className="text-muted-foreground">Carregando itens...</div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {saleItems.map((item) => (
+                      <Card key={item.id} className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{item.product_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Quantidade: {item.quantity} × {formatCurrency(item.unit_price)}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">{formatCurrency(item.total_price)}</p>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Notes */}
+              {selectedSale.note && (
+                <div>
+                  <h4 className="font-medium mb-2">Observações</h4>
+                  <p className="text-sm text-muted-foreground bg-muted p-3 rounded">
+                    {selectedSale.note}
+                  </p>
+                </div>
+              )}
+
+              {/* Cancel Info */}
+              {selectedSale.canceled && (
+                <div>
+                  <h4 className="font-medium mb-2">Informações do Cancelamento</h4>
+                  <div className="text-sm space-y-1">
+                    {selectedSale.canceled_at && (
+                      <p>
+                        <span className="text-muted-foreground">Data do cancelamento:</span>{" "}
+                        {format(new Date(selectedSale.canceled_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </p>
+                    )}
+                    {selectedSale.cancel_reason && (
+                      <p>
+                        <span className="text-muted-foreground">Motivo:</span> {selectedSale.cancel_reason}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

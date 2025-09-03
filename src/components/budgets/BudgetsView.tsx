@@ -153,11 +153,17 @@ export function BudgetsView() {
     setGeneratingPdfs(prev => new Set(prev).add(budget.id));
     
     try {
-      await generateBudgetPDF(budget);
-      toast({
-        title: "📄 PDF Gerado!",
-        description: "PDF do orçamento baixado com sucesso! Verifique sua pasta de downloads.",
-      });
+      console.log("Iniciando geração de PDF para orçamento:", budget.id);
+      const result = await generateBudgetPDF(budget);
+      
+      if (result !== false) {
+        toast({
+          title: "📄 PDF Gerado!",
+          description: "PDF do orçamento baixado com sucesso! Verifique sua pasta de downloads.",
+        });
+      } else {
+        throw new Error("Falha na geração do PDF");
+      }
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
       toast({
