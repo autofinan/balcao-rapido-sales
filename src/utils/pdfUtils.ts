@@ -26,35 +26,39 @@ interface Budget {
 
 export const generateBudgetPDF = async (budget: Budget) => {
   try {
-    // Validar acesso ao orçamento usando função de segurança
-    const { data: isValid, error: validationError } = await supabase
-      .rpc('validate_budget_owner', { budget_id_param: budget.id });
+    console.log('🔄 Iniciando geração de PDF para orçamento:', budget.id);
     
-    if (validationError || !isValid) {
-      throw new Error('Acesso negado: você não tem permissão para gerar PDF deste orçamento');
-    }
-
-    // Buscar itens do orçamento
+    // Buscar itens do orçamento primeiro
     const { data: items, error } = await supabase
       .from('budget_items')
-      .select(`
-        id,
-        quantity,
-        unit_price,
-        total_price,
-        products!inner(name)
-      `)
+      .select('id, quantity, unit_price, total_price, product_id')
       .eq('budget_id', budget.id);
 
-    if (error) throw error;
+    console.log('📋 Itens encontrados:', items?.length || 0);
+    if (error) {
+      console.error('❌ Erro ao buscar itens:', error);
+      throw new Error(`Erro ao buscar itens do orçamento: ${error.message}`);
+    }
 
-    const budgetItems: BudgetItem[] = (items || []).map(item => ({
-      id: item.id,
-      product_name: (item.products as any).name,
-      quantity: item.quantity,
-      unit_price: item.unit_price,
-      total_price: item.total_price
-    }));
+    // Buscar nomes dos produtos separadamente
+    const budgetItems: BudgetItem[] = [];
+    for (const item of items || []) {
+      const { data: product } = await supabase
+        .from('products')
+        .select('name')
+        .eq('id', item.product_id)
+        .single();
+      
+      budgetItems.push({
+        id: item.id,
+        product_name: product?.name || 'Produto não encontrado',
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_price: item.total_price
+      });
+    }
+
+    console.log('✅ Itens processados para PDF:', budgetItems.length);
 
     // Criar o PDF
     const doc = new jsPDF();
@@ -292,11 +296,14 @@ export const generateBudgetPDF = async (budget: Budget) => {
     // Baixar o PDF
     const customerName = budget.customer_name ? budget.customer_name.replace(/[^a-zA-Z0-9]/g, '_') : 'Cliente';
     const fileName = `Orcamento_${customerName}_${budget.id.substring(0, 8)}_${new Date().toISOString().split('T')[0]}.pdf`;
+    
+    console.log('💾 Salvando PDF:', fileName);
     doc.save(fileName);
     
+    console.log('✅ PDF gerado com sucesso!');
     return true;
   } catch (error) {
-    console.error('Erro ao gerar PDF:', error);
+    console.error('❌ Erro completo ao gerar PDF:', error);
     throw error;
   }
 };

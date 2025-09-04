@@ -92,12 +92,19 @@ export function BudgetsView() {
     setConvertingBudgets(prev => new Set(prev).add(budgetId));
     
     try {
+      console.log('🔄 Iniciando conversão de orçamento para venda:', budgetId);
+      
       const { data, error } = await supabase.rpc("convert_budget_to_sale", {
         budget_id_param: budgetId
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro RPC:', error);
+        throw error;
+      }
 
+      console.log('✅ Venda criada com ID:', data);
+      
       toast({
         title: "✅ Sucesso!",
         description: "Orçamento convertido em venda com sucesso! A venda foi criada e o orçamento marcado como convertido.",
@@ -105,7 +112,7 @@ export function BudgetsView() {
 
       fetchBudgets();
     } catch (error) {
-      console.error("Erro ao converter orçamento:", error);
+      console.error("❌ Erro completo ao converter orçamento:", error);
       toast({
         title: "❌ Erro",
         description: error instanceof Error ? error.message : "Erro ao converter orçamento em venda",
