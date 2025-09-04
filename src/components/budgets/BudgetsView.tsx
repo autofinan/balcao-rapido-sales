@@ -44,8 +44,9 @@ export function BudgetsView() {
   }, []);
 
   const fetchBudgets = async () => {
+    setLoading(true);
     try {
-      // SEGURANÇA: Usar consulta que seleciona apenas campos não sensíveis
+      // SEGURANÇA: Buscar dados dos orçamentos sem informações sensíveis do cliente
       const { data, error } = await supabase
         .from("budgets")
         .select(`
@@ -63,19 +64,43 @@ export function BudgetsView() {
           canceled_at,
           cancel_reason,
           canceled_by,
-          owner_id,
-          customer_name:customer_name,
-          customer_email:customer_email,
-          customer_phone:customer_phone
+          owner_id
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
-      // Log de auditoria: registrar acesso aos dados (sem expor informações sensíveis)
-      console.log(`Acesso seguro a ${data?.length || 0} orçamentos (dados do cliente protegidos por RLS)`);
+      // Buscar informações protegidas do cliente para cada orçamento
+      const budgetsWithCustomerData: Budget[] = await Promise.all(
+        (data || []).map(async (budget): Promise<Budget> => {
+          const { data: protectedData, error: protectedError } = await supabase
+            .rpc('get_budget_with_protected_customer_data', { budget_id_param: budget.id });
+          
+          if (protectedError) {
+            console.error(`Erro ao buscar dados protegidos do orçamento ${budget.id}:`, protectedError);
+            // Retornar dados básicos sem informações do cliente em caso de erro
+            return {
+              ...budget,
+              customer_name: null,
+              customer_email: null,
+              customer_phone: null,
+            } as Budget;
+          }
+          
+          const customerData = protectedData?.[0];
+          return {
+            ...budget,
+            customer_name: customerData?.customer_name || null,
+            customer_email: customerData?.customer_email || null,
+            customer_phone: customerData?.customer_phone || null,
+          } as Budget;
+        })
+      );
       
-      setBudgets(data || []);
+      // Log de auditoria: registrar acesso aos dados usando função segura
+      console.log(`Acesso seguro a ${budgetsWithCustomerData.length} orçamentos via função protegida`);
+      
+      setBudgets(budgetsWithCustomerData);
     } catch (error) {
       console.error("Erro ao buscar orçamentos:", error);
       toast({
