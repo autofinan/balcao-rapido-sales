@@ -13,8 +13,9 @@ import { FastSaleView } from "@/components/sales/FastSaleView";
 import { StockAdjustmentView } from "@/components/inventory/StockAdjustmentView";
 import { ReportsView } from "@/components/reports/ReportsView";
 import { BudgetsView } from "@/components/budgets/BudgetsView";
+import { ExpensesView } from "@/components/expenses/ExpensesView";
 
-type View = "dashboard" | "pos" | "products" | "categories" | "sales" | "bulk-products" | "import-csv" | "fast-sale" | "stock-adjustment" | "reports" | "budgets";
+type View = "dashboard" | "pos" | "products" | "categories" | "sales" | "bulk-products" | "import-csv" | "fast-sale" | "stock-adjustment" | "reports" | "budgets" | "expenses";
 
 export default function Index() {
   const [currentView, setCurrentView] = useState<View>("dashboard");
@@ -53,6 +54,8 @@ export default function Index() {
         return <ReportsView />;
       case "budgets":
         return <BudgetsView />;
+      case "expenses":
+        return <ExpensesView />;
       default:
         return <POSView />;
     }
