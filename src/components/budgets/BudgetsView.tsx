@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { BudgetForm } from "./BudgetForm";
 import { BudgetDetails } from "./BudgetDetails";
+import { ConvertBudgetModal } from "./ConvertBudgetModal";
 import { generateBudgetPDF } from "@/utils/pdfUtils";
 
 interface Budget {
@@ -33,6 +34,8 @@ export function BudgetsView() {
   const [showForm, setShowForm] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [budgetToConvert, setBudgetToConvert] = useState<Budget | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [convertingBudgets, setConvertingBudgets] = useState<Set<string>>(new Set());
@@ -113,11 +116,13 @@ export function BudgetsView() {
     }
   };
 
-  const handleConvertToSale = async (budgetId: string) => {
-    setConvertingBudgets(prev => new Set(prev).add(budgetId));
+  const handleConvertToSale = async (paymentMethod: string, notes: string) => {
+    if (!budgetToConvert) return;
+    
+    setConvertingBudgets(prev => new Set(prev).add(budgetToConvert.id));
     
     try {
-      console.log('🔄 Iniciando conversão de orçamento para venda:', budgetId);
+      console.log('🔄 Iniciando conversão de orçamento para venda:', budgetToConvert.id);
       
       // Verificar se o usuário está autenticado
       const { data: user } = await supabase.auth.getUser();
@@ -125,22 +130,90 @@ export function BudgetsView() {
         throw new Error('Usuário não autenticado');
       }
 
-      const { data, error } = await supabase.rpc("convert_budget_to_sale", {
-        budget_id_param: budgetId
-      });
+      // Criar a venda primeiro
+      const { data: sale, error: saleError } = await supabase
+        .from("sales")
+        .insert({
+          total: budgetToConvert.total,
+          subtotal: budgetToConvert.subtotal,
+          discount_type: budgetToConvert.discount_type,
+          discount_value: budgetToConvert.discount_value,
+          payment_method: paymentMethod,
+          note: notes || `Convertido do orçamento: ${budgetToConvert.id}`,
+          date: new Date().toISOString()
+        })
+        .select()
+        .single();
 
-      if (error) {
-        console.error('❌ Erro RPC:', error);
-        throw error;
+      if (saleError) throw saleError;
+
+      // Buscar itens do orçamento
+      const { data: budgetItems, error: itemsError } = await supabase
+        .from("budget_items")
+        .select("*")
+        .eq("budget_id", budgetToConvert.id);
+
+      if (itemsError) throw itemsError;
+
+      // Criar itens da venda
+      if (budgetItems && budgetItems.length > 0) {
+        const saleItems = budgetItems.map(item => ({
+          sale_id: sale.id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price
+        }));
+
+        const { error: saleItemsError } = await supabase
+          .from("sale_items")
+          .insert(saleItems);
+
+        if (saleItemsError) throw saleItemsError;
+
+        // Atualizar estoque
+        for (const item of budgetItems) {
+          // Primeiro buscar o estoque atual
+          const { data: product } = await supabase
+            .from("products")
+            .select("stock")
+            .eq("id", item.product_id)
+            .single();
+
+          if (product) {
+            const { error: stockError } = await supabase
+              .from("products")
+              .update({ 
+                stock: Math.max(0, product.stock - item.quantity)
+              })
+              .eq("id", item.product_id);
+
+            if (stockError) console.error("Erro ao atualizar estoque:", stockError);
+          }
+        }
       }
 
-      console.log('✅ Venda criada com ID:', data);
+      // Marcar orçamento como convertido
+      const { error: updateError } = await supabase
+        .from("budgets")
+        .update({
+          status: "converted",
+          converted_sale_id: sale.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", budgetToConvert.id);
+
+      if (updateError) throw updateError;
+
+      console.log('✅ Venda criada com ID:', sale.id);
       
       toast({
         title: "Sucesso! 🎉",
-        description: `Orçamento convertido em venda com sucesso! ID da venda: ${data?.substring(0, 8)}`
+        description: `Orçamento convertido em venda com sucesso!`,
       });
 
+      setShowConvertModal(false);
+      setBudgetToConvert(null);
       fetchBudgets();
     } catch (error: any) {
       console.error("❌ Erro detalhado ao converter orçamento:", error);
@@ -164,7 +237,7 @@ export function BudgetsView() {
     } finally {
       setConvertingBudgets(prev => {
         const newSet = new Set(prev);
-        newSet.delete(budgetId);
+        newSet.delete(budgetToConvert.id);
         return newSet;
       });
     }
@@ -310,11 +383,11 @@ export function BudgetsView() {
           </Card>
         ) : (
           filteredBudgets.map((budget) => (
-            <Card key={budget.id}>
-              <CardHeader className="pb-3">
+            <Card key={budget.id} className="card-hover border-0 shadow-md">
+              <CardHeader className="pb-3 bg-gradient-to-r from-primary/5 to-primary/10 rounded-t-lg">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <CardTitle className="text-lg">
+                    <CardTitle className="text-lg text-primary">
                       {budget.customer_name || "Cliente não informado"}
                     </CardTitle>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -323,9 +396,11 @@ export function BudgetsView() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold">R$ {budget.total.toFixed(2)}</div>
+                    <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                      R$ {budget.total.toFixed(2)}
+                    </div>
                     {budget.discount_value > 0 && (
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-green-600 font-medium">
                         Desc: {budget.discount_type === 'percentage' ? `${budget.discount_value}%` : `R$ ${budget.discount_value.toFixed(2)}`}
                       </div>
                     )}
@@ -351,7 +426,10 @@ export function BudgetsView() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleConvertToSale(budget.id)}
+                        onClick={() => {
+                          setBudgetToConvert(budget);
+                          setShowConvertModal(true);
+                        }}
                         disabled={convertingBudgets.has(budget.id)}
                       >
                         {convertingBudgets.has(budget.id) ? (
@@ -421,6 +499,14 @@ export function BudgetsView() {
           onOpenChange={setShowDetails}
         />
       )}
+
+      <ConvertBudgetModal
+        budget={budgetToConvert}
+        open={showConvertModal}
+        onOpenChange={setShowConvertModal}
+        onConfirm={handleConvertToSale}
+        loading={budgetToConvert ? convertingBudgets.has(budgetToConvert.id) : false}
+      />
     </div>
   );
 }
