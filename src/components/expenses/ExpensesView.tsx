@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ExpenseForm } from "./ExpenseForm";
 import { ExpenseStats } from "./ExpenseStats";
+import { ExpensesDashboard } from "./ExpensesDashboard";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -125,6 +126,7 @@ export function ExpensesView() {
         </Button>
       </div>
 
+      <ExpensesDashboard />
       <ExpenseStats expenses={filteredExpenses} />
 
       <div className="flex gap-4 items-center flex-wrap">

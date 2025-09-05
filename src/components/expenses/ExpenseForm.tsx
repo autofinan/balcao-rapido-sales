@@ -58,6 +58,7 @@ export function ExpenseForm({ open, onOpenChange, onSave, expense }: ExpenseForm
         amount: parseFloat(amount),
         expense_date: format(expenseDate, 'yyyy-MM-dd'),
         payment_method: paymentMethod || null,
+        owner_id: (await supabase.auth.getUser()).data.user?.id,
       };
 
       if (expense) {

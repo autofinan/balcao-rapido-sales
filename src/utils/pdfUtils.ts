@@ -60,241 +60,303 @@ export const generateBudgetPDF = async (budget: Budget) => {
 
     console.log('✅ Itens processados para PDF:', budgetItems.length);
 
-    // Criar o PDF
+    // Criar o PDF com design moderno e profissional
     const doc = new jsPDF();
     
     // Configurações
     const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
     const margin = 20;
     let yPosition = 25;
     
-    // Header com fundo colorido
-    doc.setFillColor(59, 130, 246); // bg-blue-500
-    doc.rect(0, 0, pageWidth, 35, 'F');
+    // === CABEÇALHO PRINCIPAL ===
+    // Gradiente simulado com retângulos sobrepostos
+    doc.setFillColor(37, 99, 235); // blue-600
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    doc.setFillColor(59, 130, 246); // blue-500 (mais claro)
+    doc.rect(0, 25, pageWidth, 15, 'F');
     
-    // Cabeçalho
-    doc.setFontSize(24);
+    // Logo/Nome da empresa
+    doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255); // texto branco
-    doc.text('ORÇAMENTO', pageWidth / 2, 22, { align: 'center' });
+    doc.setTextColor(255, 255, 255);
+    doc.text('SUA EMPRESA', margin, 22);
     
-    // Reset cor do texto
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Sistema de Gestão Comercial', margin, 32);
+    
+    // Número do orçamento no canto direito
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    const budgetNumber = `#${budget.id.substring(0, 8).toUpperCase()}`;
+    doc.text('ORÇAMENTO', pageWidth - margin - 50, 18);
+    doc.text(budgetNumber, pageWidth - margin - 50, 28);
+    
+    // Reset para próxima seção
     doc.setTextColor(0, 0, 0);
-    yPosition = 50;
+    yPosition = 55;
     
-    // Box para informações da empresa
-    doc.setDrawColor(200, 200, 200);
-    doc.setFillColor(248, 250, 252); // bg-slate-50
-    doc.rect(margin, yPosition, pageWidth - 2 * margin, 35, 'FD');
+    // === INFORMAÇÕES DO ORÇAMENTO E STATUS ===
+    // Box de informações gerais
+    doc.setFillColor(248, 250, 252); // slate-50
+    doc.setDrawColor(226, 232, 240); // slate-200
+    doc.roundedRect(margin, yPosition, pageWidth - 2 * margin, 28, 3, 3, 'FD');
     
-    // Informações da empresa
+    // Dados do orçamento (esquerda)
     yPosition += 8;
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('SUA EMPRESA LTDA', margin + 5, yPosition);
+    doc.text('DADOS DO ORÇAMENTO', margin + 8, yPosition);
+    
     yPosition += 6;
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Endereço da empresa', margin + 5, yPosition);
+    doc.text(`Data de Emissão: ${new Date(budget.created_at).toLocaleDateString('pt-BR')}`, margin + 8, yPosition);
+    
     yPosition += 4;
-    doc.text('Telefone: (00) 0000-0000 | E-mail: contato@empresa.com', margin + 5, yPosition);
-    
-    yPosition += 25;
-    
-    // Box para dados do orçamento
-    doc.setFillColor(254, 249, 195); // bg-yellow-100
-    doc.rect(margin, yPosition, (pageWidth - 2 * margin) / 2 - 5, 35, 'FD');
-    
-    yPosition += 8;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('DADOS DO ORÇAMENTO', margin + 5, yPosition);
-    yPosition += 8;
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Número: #${budget.id.substring(0, 8).toUpperCase()}`, margin + 5, yPosition);
-    yPosition += 5;
-    doc.text(`Data de Emissão: ${new Date(budget.created_at).toLocaleDateString('pt-BR')}`, margin + 5, yPosition);
-    yPosition += 5;
-    
     if (budget.valid_until) {
-      doc.text(`Válido até: ${new Date(budget.valid_until).toLocaleDateString('pt-BR')}`, margin + 5, yPosition);
+      doc.text(`Válido até: ${new Date(budget.valid_until).toLocaleDateString('pt-BR')}`, margin + 8, yPosition);
+    } else {
+      doc.text('Válido por: 30 dias', margin + 8, yPosition);
     }
     
-    // Status do orçamento (do lado direito)
-    const statusX = margin + (pageWidth - 2 * margin) / 2 + 5;
-    yPosition -= 18;
+    // Status (direita)
+    const statusColors = {
+      'open': { bg: [220, 252, 231] as [number, number, number], text: [22, 163, 74] as [number, number, number], label: 'ABERTO' },
+      'converted': { bg: [219, 234, 254] as [number, number, number], text: [37, 99, 235] as [number, number, number], label: 'CONVERTIDO' },
+      'canceled': { bg: [254, 226, 226] as [number, number, number], text: [220, 38, 38] as [number, number, number], label: 'CANCELADO' }
+    };
     
-    doc.setFillColor(220, 252, 231); // bg-green-100
-    doc.rect(statusX, yPosition, (pageWidth - 2 * margin) / 2 - 5, 35, 'FD');
+    const statusInfo = statusColors[budget.status as keyof typeof statusColors] || statusColors.open;
     
-    yPosition += 8;
+    const statusX = pageWidth - margin - 60;
+    yPosition -= 10;
+    
+    doc.setFillColor(statusInfo.bg[0], statusInfo.bg[1], statusInfo.bg[2]);
+    doc.roundedRect(statusX, yPosition, 55, 20, 2, 2, 'F');
+    
+    doc.setTextColor(statusInfo.text[0], statusInfo.text[1], statusInfo.text[2]);
     doc.setFont('helvetica', 'bold');
-    doc.text('STATUS', statusX + 5, yPosition);
-    yPosition += 8;
+    doc.setFontSize(8);
+    doc.text('STATUS', statusX + 3, yPosition + 6);
+    doc.setFontSize(10);
+    doc.text(statusInfo.label, statusX + 3, yPosition + 13);
     
-    doc.setFont('helvetica', 'normal');
-    const statusText = budget.status === 'open' ? 'ABERTO' : 
-                      budget.status === 'converted' ? 'CONVERTIDO' : 'CANCELADO';
-    doc.text(`Status: ${statusText}`, statusX + 5, yPosition);
-    
+    doc.setTextColor(0, 0, 0);
     yPosition += 25;
     
-    // Box para dados do cliente
-    doc.setFillColor(239, 246, 255); // bg-blue-50
-    doc.rect(margin, yPosition, pageWidth - 2 * margin, 35, 'FD');
+    // === DADOS DO CLIENTE ===
+    doc.setFillColor(254, 249, 195); // yellow-100
+    doc.setDrawColor(251, 191, 36); // yellow-400
+    doc.roundedRect(margin, yPosition, pageWidth - 2 * margin, 35, 3, 3, 'FD');
     
     yPosition += 8;
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('DADOS DO CLIENTE', margin + 5, yPosition);
-    yPosition += 8;
+    doc.text('CLIENTE', margin + 8, yPosition);
     
+    yPosition += 8;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
+    
     if (budget.customer_name) {
-      doc.text(`Nome: ${budget.customer_name}`, margin + 5, yPosition);
+      doc.setFont('helvetica', 'bold');
+      doc.text(budget.customer_name, margin + 8, yPosition);
       yPosition += 5;
+      doc.setFont('helvetica', 'normal');
     } else {
-      doc.text('Nome: Cliente não informado', margin + 5, yPosition);
+      doc.text('Cliente não informado', margin + 8, yPosition);
       yPosition += 5;
     }
     
-    if (budget.customer_email) {
-      doc.text(`E-mail: ${budget.customer_email}`, margin + 5, yPosition);
-      yPosition += 5;
+    const contactInfo = [];
+    if (budget.customer_email) contactInfo.push(budget.customer_email);
+    if (budget.customer_phone) contactInfo.push(budget.customer_phone);
+    
+    if (contactInfo.length > 0) {
+      doc.setFontSize(9);
+      doc.text(contactInfo.join(' | '), margin + 8, yPosition);
     }
     
-    if (budget.customer_phone) {
-      doc.text(`Telefone: ${budget.customer_phone}`, margin + 5, yPosition);
-      yPosition += 5;
-    }
+    yPosition += 25;
     
-    yPosition += 20;
-    
-    // Seção de itens
+    // === TABELA DE ITENS ===
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('ITENS DO ORÇAMENTO', margin, yPosition);
-    yPosition += 12;
-    
-    // Cabeçalho da tabela com fundo
-    doc.setFillColor(75, 85, 99); // bg-gray-600
-    doc.rect(margin, yPosition, pageWidth - 2 * margin, 8, 'F');
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255); // texto branco
-    
-    const tableHeaders = ['PRODUTO', 'QTD', 'VALOR UNIT.', 'TOTAL'];
-    const colWidths = [85, 25, 35, 35];
-    let xPosition = margin + 2;
-    
-    tableHeaders.forEach((header, index) => {
-      doc.text(header, xPosition, yPosition + 5);
-      xPosition += colWidths[index];
-    });
-    
-    // Reset cor do texto
-    doc.setTextColor(0, 0, 0);
     yPosition += 10;
     
-    // Itens da tabela
+    // Cabeçalho da tabela
+    doc.setFillColor(71, 85, 105); // slate-600
+    doc.rect(margin, yPosition, pageWidth - 2 * margin, 10, 'F');
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    
+    const colWidths = [90, 20, 30, 30];
+    const headers = ['DESCRIÇÃO', 'QTD', 'VLR. UNIT.', 'TOTAL'];
+    let xPos = margin + 3;
+    
+    headers.forEach((header, index) => {
+      if (index === 0) {
+        doc.text(header, xPos, yPosition + 6);
+      } else {
+        doc.text(header, xPos + colWidths[index] - 3, yPosition + 6, { align: 'right' });
+      }
+      xPos += colWidths[index];
+    });
+    
+    doc.setTextColor(0, 0, 0);
+    yPosition += 12;
+    
+    // Linhas da tabela
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     
     budgetItems.forEach((item, index) => {
-      // Fundo alternado para as linhas
       if (index % 2 === 0) {
-        doc.setFillColor(249, 250, 251); // bg-gray-50
-        doc.rect(margin, yPosition - 2, pageWidth - 2 * margin, 8, 'F');
+        doc.setFillColor(249, 250, 251); // gray-50
+        doc.rect(margin, yPosition - 2, pageWidth - 2 * margin, 10, 'F');
       }
       
-      xPosition = margin + 2;
+      xPos = margin + 3;
       
-      // Quebrar texto longo do produto
-      const productLines = doc.splitTextToSize(item.product_name, colWidths[0] - 5);
-      doc.text(productLines, xPosition, yPosition + 3);
+      // Produto (truncar se muito longo)
+      const productName = item.product_name.length > 35 
+        ? item.product_name.substring(0, 32) + '...'
+        : item.product_name;
+      doc.text(productName, xPos, yPosition + 4);
       
-      xPosition += colWidths[0];
-      doc.text(item.quantity.toString(), xPosition, yPosition + 3, { align: 'center' });
+      // Quantidade
+      xPos += colWidths[0];
+      doc.text(item.quantity.toString(), xPos + colWidths[1] - 3, yPosition + 4, { align: 'right' });
       
-      xPosition += colWidths[1];
-      doc.text(`R$ ${item.unit_price.toFixed(2)}`, xPosition, yPosition + 3, { align: 'right' });
+      // Valor unitário
+      xPos += colWidths[1];
+      doc.text(`R$ ${item.unit_price.toFixed(2)}`, xPos + colWidths[2] - 3, yPosition + 4, { align: 'right' });
       
-      xPosition += colWidths[2];
-      doc.text(`R$ ${item.total_price.toFixed(2)}`, xPosition, yPosition + 3, { align: 'right' });
+      // Total
+      xPos += colWidths[2];
+      doc.text(`R$ ${item.total_price.toFixed(2)}`, xPos + colWidths[3] - 3, yPosition + 4, { align: 'right' });
       
-      yPosition += Math.max(8, (productLines.length - 1) * 4 + 8);
+      yPosition += 10;
     });
     
-    yPosition += 15;
+    yPosition += 10;
     
-    // Box para totais
-    const totalsBoxHeight = budget.discount_value > 0 ? 35 : 25;
-    doc.setFillColor(254, 242, 242); // bg-red-50
-    doc.setDrawColor(239, 68, 68); // border-red-500
-    doc.rect(pageWidth - margin - 80, yPosition, 75, totalsBoxHeight, 'FD');
+    // === RESUMO FINANCEIRO ===
+    const summaryWidth = 90;
+    const summaryX = pageWidth - margin - summaryWidth;
+    
+    // Box do resumo
+    doc.setFillColor(239, 246, 255); // blue-50
+    doc.setDrawColor(59, 130, 246); // blue-500
+    doc.roundedRect(summaryX, yPosition, summaryWidth, 35, 3, 3, 'FD');
+    
+    yPosition += 8;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('RESUMO FINANCEIRO', summaryX + 5, yPosition);
     
     yPosition += 8;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    const totalsX = pageWidth - margin - 75;
     
-    doc.text(`Subtotal:`, totalsX, yPosition);
-    doc.text(`R$ ${budget.subtotal.toFixed(2)}`, pageWidth - margin - 5, yPosition, { align: 'right' });
-    yPosition += 6;
+    // Subtotal
+    doc.text('Subtotal:', summaryX + 5, yPosition);
+    doc.text(`R$ ${budget.subtotal.toFixed(2)}`, summaryX + summaryWidth - 5, yPosition, { align: 'right' });
+    yPosition += 5;
     
+    // Desconto (se houver)
     if (budget.discount_value > 0) {
       const discountAmount = budget.discount_type === 'percentage' 
         ? (budget.subtotal * budget.discount_value / 100)
         : budget.discount_value;
       
-      doc.text(`Desconto:`, totalsX, yPosition);
-      doc.text(`-R$ ${discountAmount.toFixed(2)}`, pageWidth - margin - 5, yPosition, { align: 'right' });
-      yPosition += 6;
+      doc.setTextColor(220, 38, 38); // red-600
+      doc.text('Desconto:', summaryX + 5, yPosition);
+      doc.text(`-R$ ${discountAmount.toFixed(2)}`, summaryX + summaryWidth - 5, yPosition, { align: 'right' });
+      yPosition += 5;
+      doc.setTextColor(0, 0, 0);
     }
     
     // Linha separadora
-    doc.setDrawColor(239, 68, 68);
-    doc.line(totalsX, yPosition, pageWidth - margin - 5, yPosition);
-    yPosition += 5;
+    doc.setDrawColor(59, 130, 246);
+    doc.line(summaryX + 5, yPosition, summaryX + summaryWidth - 5, yPosition);
+    yPosition += 3;
     
+    // Total
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
-    doc.text(`TOTAL:`, totalsX, yPosition);
-    doc.text(`R$ ${budget.total.toFixed(2)}`, pageWidth - margin - 5, yPosition, { align: 'right' });
+    doc.setTextColor(37, 99, 235); // blue-600
+    doc.text('TOTAL:', summaryX + 5, yPosition);
+    doc.text(`R$ ${budget.total.toFixed(2)}`, summaryX + summaryWidth - 5, yPosition, { align: 'right' });
     
-    // Observações
+    doc.setTextColor(0, 0, 0);
+    yPosition += 20;
+    
+    // === OBSERVAÇÕES ===
     if (budget.notes) {
-      yPosition += 25;
-      
-      doc.setFillColor(255, 247, 237); // bg-orange-50
-      doc.rect(margin, yPosition, pageWidth - 2 * margin, 25, 'FD');
+      doc.setFillColor(255, 251, 235); // amber-50
+      doc.setDrawColor(245, 158, 11); // amber-500
+      doc.roundedRect(margin, yPosition, pageWidth - 2 * margin, 25, 3, 3, 'FD');
       
       yPosition += 8;
-      doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
-      doc.text('OBSERVAÇÕES:', margin + 5, yPosition);
-      yPosition += 7;
+      doc.setFontSize(11);
+      doc.text('OBSERVAÇÕES', margin + 8, yPosition);
       
+      yPosition += 6;
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      const notesLines = doc.splitTextToSize(budget.notes, pageWidth - 2 * margin - 10);
-      doc.text(notesLines, margin + 5, yPosition);
+      const notesLines = doc.splitTextToSize(budget.notes, pageWidth - 2 * margin - 16);
+      doc.text(notesLines, margin + 8, yPosition);
+      
+      yPosition += 20;
     }
     
-    // Rodapé
-    const footerY = doc.internal.pageSize.height - 20;
+    // === CONDIÇÕES COMERCIAIS ===
+    yPosition += 10;
+    doc.setFillColor(249, 250, 251); // gray-50
+    doc.roundedRect(margin, yPosition, pageWidth - 2 * margin, 25, 3, 3, 'F');
+    
+    yPosition += 8;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('CONDIÇÕES COMERCIAIS', margin + 8, yPosition);
+    
+    yPosition += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('• Orçamento válido conforme data de validade informada', margin + 8, yPosition);
+    yPosition += 3;
+    doc.text('• Preços sujeitos a alteração sem aviso prévio', margin + 8, yPosition);
+    yPosition += 3;
+    doc.text('• Pagamento conforme condições acordadas', margin + 8, yPosition);
+    
+    // === RODAPÉ ===
+    const footerY = pageHeight - 25;
+    
+    // Linha decorativa
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
+    
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    doc.text('Este orçamento foi gerado automaticamente pelo sistema.', pageWidth / 2, footerY, { align: 'center' });
-    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pageWidth / 2, footerY + 5, { align: 'center' });
+    doc.setTextColor(100, 116, 139); // slate-500
     
-    // Baixar o PDF
-    const customerName = budget.customer_name ? budget.customer_name.replace(/[^a-zA-Z0-9]/g, '_') : 'Cliente';
+    doc.text('Este orçamento foi gerado automaticamente pelo sistema de gestão.', pageWidth / 2, footerY, { align: 'center' });
+    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')} | Documento válido sem assinatura`, pageWidth / 2, footerY + 5, { align: 'center' });
+    
+    // Assinatura da empresa (canto direito)
+    doc.text('SUA EMPRESA LTDA', pageWidth - margin - 5, footerY + 12, { align: 'right' });
+    
+    // === SALVAR PDF ===
+    const customerName = budget.customer_name 
+      ? budget.customer_name.replace(/[^a-zA-Z0-9]/g, '_') 
+      : 'Cliente';
     const fileName = `Orcamento_${customerName}_${budget.id.substring(0, 8)}_${new Date().toISOString().split('T')[0]}.pdf`;
     
     console.log('💾 Salvando PDF:', fileName);

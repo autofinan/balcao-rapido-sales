@@ -119,6 +119,12 @@ export function BudgetsView() {
     try {
       console.log('🔄 Iniciando conversão de orçamento para venda:', budgetId);
       
+      // Verificar se o usuário está autenticado
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) {
+        throw new Error('Usuário não autenticado');
+      }
+
       const { data, error } = await supabase.rpc("convert_budget_to_sale", {
         budget_id_param: budgetId
       });
@@ -131,16 +137,28 @@ export function BudgetsView() {
       console.log('✅ Venda criada com ID:', data);
       
       toast({
-        title: "✅ Sucesso!",
-        description: "Orçamento convertido em venda com sucesso! A venda foi criada e o orçamento marcado como convertido.",
+        title: "Sucesso! 🎉",
+        description: `Orçamento convertido em venda com sucesso! ID da venda: ${data?.substring(0, 8)}`
       });
 
       fetchBudgets();
-    } catch (error) {
-      console.error("❌ Erro completo ao converter orçamento:", error);
+    } catch (error: any) {
+      console.error("❌ Erro detalhado ao converter orçamento:", error);
+      
+      let errorMessage = "Erro ao converter orçamento";
+      if (error.message) {
+        if (error.message.includes('not found')) {
+          errorMessage = "Orçamento não encontrado ou já convertido";
+        } else if (error.message.includes('payment_method')) {
+          errorMessage = "Erro na forma de pagamento. Tente novamente";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
       toast({
-        title: "❌ Erro",
-        description: error instanceof Error ? error.message : "Erro ao converter orçamento em venda",
+        title: "Erro",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
