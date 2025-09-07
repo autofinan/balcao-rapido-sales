@@ -255,7 +255,7 @@ export function FastSaleView() {
         </Button>
       </div>
 
-      {/* Search with Dropdown */}
+      {/* Search Bar */}
       <Card>
         <CardContent className="pt-6">
           <SearchDropdown
@@ -316,8 +316,7 @@ export function FastSaleView() {
               {products.slice(0, 24).map((product) => (
                 <div
                   key={product.id}
-                  className="group bg-gradient-subtle border rounded-xl p-3 cursor-pointer transition-all duration-200 hover:shadow-elegant hover:scale-[1.02] hover:border-primary/20"
-                  onClick={() => addToCart(product)}
+                  className="group bg-gradient-subtle border rounded-xl p-3 hover:shadow-elegant hover:scale-[1.02] hover:border-primary/20 relative transition-all duration-200"
                 >
                   <div className="space-y-2">
                     <div className="aspect-square bg-background/50 rounded-lg flex items-center justify-center text-2xl font-bold text-primary/70">
@@ -334,6 +333,17 @@ export function FastSaleView() {
                         {product.stock} un
                       </Badge>
                     </div>
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(product);
+                      }}
+                      className="w-full bg-gradient-primary hover:opacity-90 text-white border-0"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Adicionar
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -347,9 +357,9 @@ export function FastSaleView() {
         </Card>
       )}
 
-      {/* Cart */}
+      {/* Cart - Always visible and at top when has items */}
       {cart.length > 0 && (
-        <Card>
+        <Card className="sticky top-4 z-20 bg-background/95 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />
@@ -358,7 +368,7 @@ export function FastSaleView() {
           </CardHeader>
           <CardContent className="space-y-4">
             {cart.map((item) => (
-              <div key={item.product.id} className="flex items-center justify-between p-3 border rounded-lg">
+              <div key={item.product.id} className="flex items-center justify-between p-3 border rounded-lg bg-background">
                 <div className="flex-1">
                   <h4 className="font-medium">{item.product.name}</h4>
                   <p className="text-sm text-muted-foreground">
@@ -374,7 +384,7 @@ export function FastSaleView() {
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
-                    <span className="w-8 text-center">{item.quantity}</span>
+                    <span className="w-8 text-center font-medium">{item.quantity}</span>
                     <Button
                       size="sm"
                       variant="outline"
@@ -395,12 +405,12 @@ export function FastSaleView() {
             <div className="border-t pt-4">
               <div className="flex justify-between items-center text-xl font-bold">
                 <span>Total:</span>
-                <span>R$ {getTotal().toFixed(2)}</span>
+                <span className="text-primary">R$ {getTotal().toFixed(2)}</span>
               </div>
               
               <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
                 <DialogTrigger asChild>
-                  <Button className="w-full mt-4" size="lg">
+                  <Button className="w-full mt-4 bg-gradient-primary hover:opacity-90" size="lg">
                     Fechar Venda
                   </Button>
                 </DialogTrigger>

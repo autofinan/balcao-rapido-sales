@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Search, Download } from "lucide-react";
 import { ProductForm } from "./ProductForm";
 import { ProductList } from "./ProductList";
+import { SearchDropdown } from "@/components/ui/search-dropdown";
 import { supabase } from "@/integrations/supabase/client";
 import { exportProductsToCSV, ExportProduct } from "@/utils/exportUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -126,13 +127,17 @@ export function ProductsView() {
         </div>
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar produtos..."
+      <div className="max-w-md">
+        <SearchDropdown
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-10"
+          onValueChange={setSearch}
+          options={products.map(product => ({
+            value: product.name,
+            label: `${product.name} - R$ ${product.price.toFixed(2)}`,
+            category: product.categories?.name || "Sem categoria"
+          }))}
+          placeholder="Buscar produtos por nome, SKU ou código..."
+          emptyMessage="Nenhum produto encontrado"
         />
       </div>
 
