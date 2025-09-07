@@ -5,11 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Download, TrendingUp, Package, AlertTriangle, DollarSign } from "lucide-react";
-import { format } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarIcon, Download, TrendingUp, Package, AlertTriangle, DollarSign, FileText, Calendar as CalendarPlusIcon } from "lucide-react";
+import { format, startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DateRange } from "react-day-picker";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { exportSalesToCSV, ExportSale } from "@/utils/exportUtils";
 
 interface DayReport {
   totalSales: number;
@@ -28,22 +32,33 @@ interface DayReport {
 
 export function ReportsView() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [periodType, setPeriodType] = useState<"day" | "range" | "month">("day");
   const [report, setReport] = useState<DayReport | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     generateReport();
-  }, [selectedDate]);
+  }, [selectedDate, dateRange, periodType]);
 
   const generateReport = async () => {
     setIsLoading(true);
     try {
-      const startDate = new Date(selectedDate);
-      startDate.setHours(0, 0, 0, 0);
-      
-      const endDate = new Date(selectedDate);
-      endDate.setHours(23, 59, 59, 999);
+      let startDate: Date, endDate: Date;
+
+      if (periodType === "day") {
+        startDate = startOfDay(selectedDate);
+        endDate = endOfDay(selectedDate);
+      } else if (periodType === "month") {
+        startDate = startOfMonth(selectedDate);
+        endDate = endOfMonth(selectedDate);
+      } else if (periodType === "range" && dateRange?.from && dateRange?.to) {
+        startDate = startOfDay(dateRange.from);
+        endDate = endOfDay(dateRange.to);
+      } else {
+        return;
+      }
 
       // Get sales for the selected date
       const { data: sales, error: salesError } = await supabase
@@ -134,67 +149,151 @@ export function ReportsView() {
     }
   };
 
-  const exportToCSV = () => {
+  const exportToCSV = async () => {
     if (!report) return;
 
-    const csvContent = [
-      `Relatório do Dia - ${format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}`,
-      '',
-      'RESUMO GERAL',
-      `Total Vendido,R$ ${report.totalSales.toFixed(2)}`,
-      `Número de Vendas,${report.numberOfSales}`,
-      '',
-      'TOP 5 PRODUTOS MAIS VENDIDOS',
-      'Produto,Quantidade,Receita',
-      ...report.topProducts.map(p => `${p.name},${p.quantity},R$ ${p.revenue.toFixed(2)}`),
-      '',
-      'PRODUTOS COM ESTOQUE BAIXO',
-      'Produto,Estoque Atual,Estoque Mínimo',
-      ...report.lowStockProducts.map(p => `${p.name},${p.stock},${p.min_stock}`)
-    ].join('\n');
+    try {
+      let startDate: Date, endDate: Date;
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", `relatorio-${format(selectedDate, "yyyy-MM-dd")}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (periodType === "day") {
+        startDate = startOfDay(selectedDate);
+        endDate = endOfDay(selectedDate);
+      } else if (periodType === "month") {
+        startDate = startOfMonth(selectedDate);
+        endDate = endOfMonth(selectedDate);
+      } else if (periodType === "range" && dateRange?.from && dateRange?.to) {
+        startDate = startOfDay(dateRange.from);
+        endDate = endOfDay(dateRange.to);
+      } else {
+        return;
+      }
+
+      // Get detailed sales data for the period
+      const { data: sales, error } = await supabase
+        .from('sales')
+        .select(`
+          *,
+          sale_items (
+            *,
+            products (name, category_id, categories (name))
+          )
+        `)
+        .gte('date', startDate.toISOString())
+        .lte('date', endDate.toISOString())
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform sales data for export
+      const exportData: ExportSale[] = (sales || []).map(sale => ({
+        id: sale.id,
+        date: sale.date,
+        total: Number(sale.total),
+        payment_method: sale.payment_method,
+        note: sale.note,
+        total_profit: 0, // Calculate if needed
+        profit_margin: 0, // Calculate if needed
+        created_at: sale.created_at
+      }));
+
+      exportSalesToCSV(exportData);
+      
+      toast({
+        title: "Relatório exportado",
+        description: "Relatório de vendas exportado com sucesso!"
+      });
+    } catch (error) {
+      console.error("Erro ao exportar:", error);
+      toast({
+        title: "Erro na exportação",
+        description: "Não foi possível exportar o relatório.",
+        variant: "destructive"
+      });
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold">Relatórios</h1>
-        <div className="flex items-center gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                initialFocus
-                locale={ptBR}
-              />
-            </PopoverContent>
-          </Popover>
-          
-          <Button onClick={exportToCSV} disabled={!report || isLoading}>
-            <Download className="mr-2 h-4 w-4" />
-            Exportar CSV
-          </Button>
-        </div>
+        <Button onClick={exportToCSV} disabled={!report || isLoading} className="bg-gradient-primary hover:opacity-90">
+          <Download className="mr-2 h-4 w-4" />
+          Exportar Relatório
+        </Button>
       </div>
+
+      {/* Period Selection */}
+      <Card className="border-primary/20 bg-gradient-subtle">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarPlusIcon className="h-5 w-5" />
+            Selecionar Período
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Select value={periodType} onValueChange={(value: "day" | "range" | "month") => setPeriodType(value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecionar tipo de período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="day">Um dia específico</SelectItem>
+              <SelectItem value="range">Intervalo de datas</SelectItem>
+              <SelectItem value="month">Mês inteiro</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="flex flex-col sm:flex-row gap-4">
+            {periodType === "day" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="justify-start">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    initialFocus
+                    locale={ptBR}
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+
+            {periodType === "month" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="justify-start">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    initialFocus
+                    locale={ptBR}
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+
+            {periodType === "range" && (
+              <DateRangePicker
+                date={dateRange}
+                onDateChange={setDateRange}
+              />
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {isLoading ? (
         <div className="text-center py-8">

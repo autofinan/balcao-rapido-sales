@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, Minus, ShoppingCart, CreditCard, Banknote, Smartphone } from "lucide-react";
+import { Search, Plus, Minus, ShoppingCart, CreditCard, Banknote, Smartphone, Grid3X3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { SearchDropdown } from "@/components/ui/search-dropdown";
 
 interface Product {
   id: string;
@@ -32,6 +33,7 @@ export function FastSaleView() {
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [showGrid, setShowGrid] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -233,30 +235,50 @@ export function FastSaleView() {
     { id: "dinheiro" as PaymentMethod, name: "Dinheiro", icon: Banknote },
   ];
 
+  const searchOptions = products.map(product => ({
+    value: product.name,
+    label: `${product.name} - R$ ${product.price.toFixed(2)}`,
+    category: product.category?.name || "Sem categoria"
+  }));
+
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Venda Rápida</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Venda Rápida</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowGrid(!showGrid)}
+        >
+          <Grid3X3 className="mr-2 h-4 w-4" />
+          {showGrid ? "Ocultar Grid" : "Mostrar Grid"}
+        </Button>
+      </div>
 
-      {/* Search */}
+      {/* Search with Dropdown */}
       <Card>
         <CardContent className="pt-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar produto por nome, SKU ou código de barras..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          <SearchDropdown
+            value={searchTerm}
+            onValueChange={(value) => {
+              setSearchTerm(value);
+              const selectedProduct = products.find(p => p.name === value);
+              if (selectedProduct) {
+                addToCart(selectedProduct);
+              }
+            }}
+            options={searchOptions}
+            placeholder="Buscar produto por nome, SKU ou código de barras..."
+            emptyMessage="Nenhum produto encontrado"
+          />
 
-          {/* Search Results */}
-          {filteredProducts.length > 0 && (
+          {/* Search Results for manual typing */}
+          {searchTerm && !searchOptions.find(opt => opt.value === searchTerm) && filteredProducts.length > 0 && (
             <div className="mt-4 space-y-2 max-h-60 overflow-auto">
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                   onClick={() => addToCart(product)}
                 >
                   <div>
@@ -269,7 +291,7 @@ export function FastSaleView() {
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-lg">R$ {product.price.toFixed(2)}</p>
-                    <Button size="sm">
+                    <Button size="sm" className="bg-gradient-primary hover:opacity-90">
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
@@ -279,6 +301,51 @@ export function FastSaleView() {
           )}
         </CardContent>
       </Card>
+
+      {/* Products Grid */}
+      {showGrid && products.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Grid3X3 className="h-5 w-5" />
+              Produtos Disponíveis
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+              {products.slice(0, 24).map((product) => (
+                <div
+                  key={product.id}
+                  className="group bg-gradient-subtle border rounded-xl p-3 cursor-pointer transition-all duration-200 hover:shadow-elegant hover:scale-[1.02] hover:border-primary/20"
+                  onClick={() => addToCart(product)}
+                >
+                  <div className="space-y-2">
+                    <div className="aspect-square bg-background/50 rounded-lg flex items-center justify-center text-2xl font-bold text-primary/70">
+                      {product.name.charAt(0)}
+                    </div>
+                    <div className="text-center space-y-1">
+                      <h4 className="font-medium text-sm line-clamp-2 leading-tight">
+                        {product.name}
+                      </h4>
+                      <p className="text-xs text-primary font-semibold">
+                        R$ {product.price.toFixed(2)}
+                      </p>
+                      <Badge variant="outline" className="text-xs">
+                        {product.stock} un
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {products.length > 24 && (
+              <p className="text-center text-sm text-muted-foreground mt-4">
+                Mostrando 24 de {products.length} produtos. Use a busca para encontrar mais.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Cart */}
       {cart.length > 0 && (

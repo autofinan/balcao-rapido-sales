@@ -4,12 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, Search, BarChart3, CreditCard, Banknote, Smartphone, Download } from "lucide-react";
-import { format } from "date-fns";
+import { CalendarIcon, Search, BarChart3, CreditCard, Banknote, Smartphone, Download, Calendar, Filter } from "lucide-react";
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DateRange } from "react-day-picker";
 import { supabase } from "@/integrations/supabase/client";
 import { exportSalesToCSV, ExportSale } from "@/utils/exportUtils";
 import { useToast } from "@/hooks/use-toast";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { SearchDropdown } from "@/components/ui/search-dropdown";
 
 interface Sale {
   id: string;
@@ -41,17 +44,61 @@ export function SalesView() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [search, setSearch] = useState("");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [quickFilter, setQuickFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSales();
-  }, []);
+  }, [dateRange]);
+
+  useEffect(() => {
+    applyQuickFilter();
+  }, [quickFilter]);
+
+  const applyQuickFilter = () => {
+    const today = new Date();
+    
+    switch (quickFilter) {
+      case "today":
+        setDateRange({
+          from: startOfDay(today),
+          to: endOfDay(today)
+        });
+        break;
+      case "last7days":
+        setDateRange({
+          from: startOfDay(subDays(today, 6)),
+          to: endOfDay(today)
+        });
+        break;
+      case "thisMonth":
+        setDateRange({
+          from: startOfMonth(today),
+          to: endOfMonth(today)
+        });
+        break;
+      case "all":
+        setDateRange(undefined);
+        break;
+    }
+  };
 
   const fetchSales = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.rpc('get_sales_with_profit');
+      let query = supabase.rpc('get_sales_with_profit');
+
+      // Apply date filter if dateRange is set
+      if (dateRange?.from) {
+        query = query.gte('date', dateRange.from.toISOString());
+      }
+      if (dateRange?.to) {
+        query = query.lte('date', dateRange.to.toISOString());
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       
@@ -157,7 +204,48 @@ export function SalesView() {
         </Card>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
+      {/* Quick Filters */}
+      <div className="flex flex-wrap gap-2 p-4 bg-muted/30 rounded-lg">
+        <Button
+          variant={quickFilter === "all" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setQuickFilter("all")}
+        >
+          Todas
+        </Button>
+        <Button
+          variant={quickFilter === "today" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setQuickFilter("today")}
+        >
+          Hoje
+        </Button>
+        <Button
+          variant={quickFilter === "last7days" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setQuickFilter("last7days")}
+        >
+          Últimos 7 dias
+        </Button>
+        <Button
+          variant={quickFilter === "thisMonth" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setQuickFilter("thisMonth")}
+        >
+          Este mês
+        </Button>
+        <Button
+          variant={quickFilter === "custom" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setQuickFilter("custom")}
+        >
+          <Calendar className="mr-2 h-4 w-4" />
+          Personalizado
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col lg:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
@@ -168,8 +256,16 @@ export function SalesView() {
           />
         </div>
         
+        {quickFilter === "custom" && (
+          <DateRangePicker
+            date={dateRange}
+            onDateChange={setDateRange}
+            className="w-full lg:w-auto"
+          />
+        )}
+        
         <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full lg:w-48">
             <SelectValue placeholder="Filtrar por pagamento" />
           </SelectTrigger>
           <SelectContent>
