@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ProductSelector } from "./ProductSelector";
+import { ProductGrid } from "./ProductGrid";
 import { CartItem, Cart } from "./Cart";
 import { PaymentModal } from "./PaymentModal";
 import { useToast } from "@/hooks/use-toast";
@@ -97,7 +97,7 @@ export function POSView() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6">
           <h2 className="text-xl font-semibold mb-4">Produtos</h2>
-          <ProductSelector onAddToCart={addToCart} />
+          <ProductGrid onAddToCart={addToCart} />
         </Card>
 
         <Card className="p-6">

@@ -1,7 +1,7 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { Calculator, Package, FolderTree, BarChart3, Upload, Download, Zap, Settings, TrendingUp, Home, FileText, Receipt } from "lucide-react";
 
-type View = "dashboard" | "pos" | "products" | "categories" | "sales" | "bulk-products" | "import-csv" | "fast-sale" | "stock-adjustment" | "reports" | "budgets" | "expenses";
+type View = "dashboard" | "pos" | "products" | "categories" | "sales" | "bulk-products" | "import-csv" | "stock-adjustment" | "reports" | "budgets" | "expenses";
 
 interface AppSidebarProps {
   currentView: View;
@@ -43,11 +43,6 @@ const menuItems = [
     id: "import-csv" as View,
     title: "Importar CSV",
     icon: Download,
-  },
-  {
-    id: "fast-sale" as View,
-    title: "Venda Rápida",
-    icon: Zap,
   },
   {
     id: "stock-adjustment" as View,

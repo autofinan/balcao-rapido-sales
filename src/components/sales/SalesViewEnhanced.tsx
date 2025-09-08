@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EnhancedDatePicker } from "@/components/ui/enhanced-date-picker";
 import { 
   Search, 
   Eye, 
@@ -15,13 +16,17 @@ import {
   Smartphone,
   CheckCircle,
   X,
-  RotateCcw
+  RotateCcw,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DateRange } from "react-day-picker";
 import { supabase } from "@/integrations/supabase/client";
 import { exportSalesToCSV, ExportSale } from "@/utils/exportUtils";
 import { useToast } from "@/hooks/use-toast";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface Sale {
   id: string;
@@ -72,6 +77,8 @@ export function SalesViewEnhanced() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
+  const [dateRange, setDateRange] = useState<DateRange>();
+  const [expandedSales, setExpandedSales] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [loadingItems, setLoadingItems] = useState(false);
   const { toast } = useToast();
@@ -122,10 +129,10 @@ export function SalesViewEnhanced() {
 
       if (error) throw error;
       
-      setSaleItems((data || []).map((item: any) => ({
+      return (data || []).map((item: any) => ({
         ...item,
         product_name: item.products?.name || "Produto não encontrado"
-      })));
+      }));
     } catch (error) {
       console.error("Erro ao carregar itens da venda:", error);
       toast({
@@ -133,15 +140,23 @@ export function SalesViewEnhanced() {
         description: "Erro ao carregar itens da venda",
         variant: "destructive"
       });
+      return [];
     } finally {
       setLoadingItems(false);
     }
   };
 
-  const handleViewDetails = async (sale: Sale) => {
-    setSelectedSale(sale);
-    setShowDetails(true);
-    await fetchSaleItems(sale.id);
+  const handleToggleExpand = async (saleId: string) => {
+    const newExpanded = new Set(expandedSales);
+    if (newExpanded.has(saleId)) {
+      newExpanded.delete(saleId);
+    } else {
+      newExpanded.add(saleId);
+      // Carregar itens da venda quando expandir
+      const items = await fetchSaleItems(saleId);
+      setSaleItems(prev => [...prev.filter(item => item.id !== saleId), ...items]);
+    }
+    setExpandedSales(newExpanded);
   };
 
   const filteredSales = sales.filter(sale => {
@@ -156,7 +171,13 @@ export function SalesViewEnhanced() {
     
     const matchesPayment = paymentFilter === "all" || sale.payment_method === paymentFilter;
     
-    return matchesSearch && matchesStatus && matchesPayment;
+    const matchesDate = !dateRange?.from || !dateRange?.to || 
+      isWithinInterval(new Date(sale.created_at), { 
+        start: dateRange.from, 
+        end: dateRange.to 
+      });
+    
+    return matchesSearch && matchesStatus && matchesPayment && matchesDate;
   });
 
   const getStatusBadge = (sale: Sale) => {
@@ -263,38 +284,45 @@ export function SalesViewEnhanced() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Buscar por ID ou observações..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
+      <div className="space-y-4">
+        <EnhancedDatePicker
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+        />
+        
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Buscar por ID ou observações..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-auto">
+            <TabsList>
+              <TabsTrigger value="all">Todas</TabsTrigger>
+              <TabsTrigger value="completed">Concluídas</TabsTrigger>
+              <TabsTrigger value="canceled">Canceladas</TabsTrigger>
+              <TabsTrigger value="converted">Orçamentos Convertidos</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Filtrar por pagamento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os métodos</SelectItem>
+              <SelectItem value="pix">PIX</SelectItem>
+              <SelectItem value="cartao">Cartão</SelectItem>
+              <SelectItem value="dinheiro">Dinheiro</SelectItem>
+              <SelectItem value="pending">Pendente</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        
-        <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-auto">
-          <TabsList>
-            <TabsTrigger value="all">Todas</TabsTrigger>
-            <TabsTrigger value="completed">Concluídas</TabsTrigger>
-            <TabsTrigger value="canceled">Canceladas</TabsTrigger>
-            <TabsTrigger value="converted">Orçamentos Convertidos</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        
-        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filtrar por pagamento" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os métodos</SelectItem>
-            <SelectItem value="pix">PIX</SelectItem>
-            <SelectItem value="cartao">Cartão</SelectItem>
-            <SelectItem value="dinheiro">Dinheiro</SelectItem>
-            <SelectItem value="pending">Pendente</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Sales List */}
@@ -308,194 +336,185 @@ export function SalesViewEnhanced() {
         ) : (
           filteredSales.map((sale) => {
             const PaymentIcon = paymentMethodIcons[sale.payment_method];
+            const isExpanded = expandedSales.has(sale.id);
+            const saleItemsData = saleItems.filter(item => item.id === sale.id);
             
             return (
               <Card key={sale.id}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm text-muted-foreground">
-                          #{sale.id.slice(-8)}
-                        </span>
-                        {getStatusBadge(sale)}
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <PaymentIcon className="h-3 w-3" />
-                          {paymentMethodLabels[sale.payment_method]}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(sale.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                      </p>
-                      {sale.note && (
-                        <p className="text-sm text-muted-foreground">
-                          Obs: {sale.note}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold">{formatCurrency(Number(sale.total))}</div>
-                      {sale.total_profit !== undefined && (
-                        <div className="text-sm">
-                          <div className="text-green-600 font-medium">
-                            Lucro: {formatCurrency(sale.total_profit)}
+                <Collapsible>
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="pb-3 cursor-pointer hover:bg-accent/50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm text-muted-foreground">
+                              #{sale.id.slice(-8)}
+                            </span>
+                            {getStatusBadge(sale)}
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <PaymentIcon className="h-3 w-3" />
+                              {paymentMethodLabels[sale.payment_method]}
+                            </Badge>
                           </div>
-                          <div className="text-muted-foreground">
-                            Margem: {(sale.profit_margin_percentage || 0).toFixed(1)}%
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(sale.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                          </p>
+                          {sale.note && (
+                            <p className="text-sm text-muted-foreground">
+                              Obs: {sale.note}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="text-2xl font-bold">{formatCurrency(Number(sale.total))}</div>
+                            {sale.total_profit !== undefined && (
+                              <div className="text-sm">
+                                <div className="text-green-600 font-medium">
+                                  Lucro: {formatCurrency(sale.total_profit)}
+                                </div>
+                                <div className="text-muted-foreground">
+                                  Margem: {(sale.profit_margin_percentage || 0).toFixed(1)}%
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleExpand(sale.id)}
+                          >
+                            {isExpanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <CardContent className="pt-0">
+                      <div className="space-y-4">
+                        {/* Sale Items */}
+                        <div>
+                          <h4 className="font-medium mb-3">Itens da Venda</h4>
+                          {loadingItems ? (
+                            <div className="text-center py-4">
+                              <div className="text-muted-foreground">Carregando itens...</div>
+                            </div>
+                          ) : saleItemsData.length > 0 ? (
+                            <div className="space-y-2">
+                              {saleItemsData.map((item) => (
+                                <div key={item.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                                  <div>
+                                    <p className="font-medium">{item.product_name}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      Quantidade: {item.quantity} × {formatCurrency(item.unit_price)}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-medium">{formatCurrency(item.total_price)}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Nenhum item encontrado</p>
+                          )}
+                        </div>
+
+                        {/* Sale Details */}
+                        <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                          <div>
+                            <h4 className="font-medium mb-2">Informações da Venda</h4>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Data:</span>
+                                <span>{format(new Date(sale.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Status:</span>
+                                {getStatusBadge(sale)}
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Pagamento:</span>
+                                <span>{paymentMethodLabels[sale.payment_method]}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h4 className="font-medium mb-2">Valores</h4>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Subtotal:</span>
+                                <span>{formatCurrency(Number(sale.subtotal || sale.total))}</span>
+                              </div>
+                              {sale.discount_value && sale.discount_value > 0 && (
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Desconto:</span>
+                                  <span>
+                                    {sale.discount_type === 'percentage' 
+                                      ? `${sale.discount_value}%` 
+                                      : formatCurrency(sale.discount_value)
+                                    }
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex justify-between font-medium">
+                                <span>Total:</span>
+                                <span>{formatCurrency(Number(sale.total))}</span>
+                              </div>
+                              {sale.total_profit !== undefined && (
+                                <>
+                                  <div className="flex justify-between text-green-600">
+                                    <span>Lucro:</span>
+                                    <span>{formatCurrency(sale.total_profit)}</span>
+                                  </div>
+                                  <div className="flex justify-between text-muted-foreground">
+                                    <span>Margem:</span>
+                                    <span>{(sale.profit_margin_percentage || 0).toFixed(1)}%</span>
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="flex justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleViewDetails(sale)}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      Ver Detalhes
-                    </Button>
-                  </div>
-                </CardContent>
+
+                        {/* Cancel Info */}
+                        {sale.canceled && (
+                          <div className="pt-4 border-t">
+                            <h4 className="font-medium mb-2 text-destructive">Informações do Cancelamento</h4>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Data do Cancelamento:</span>
+                                <span>
+                                  {sale.canceled_at ? format(new Date(sale.canceled_at), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "N/A"}
+                                </span>
+                              </div>
+                              {sale.cancel_reason && (
+                                <div>
+                                  <span className="text-muted-foreground">Motivo:</span>
+                                  <p className="mt-1 text-sm bg-destructive/10 p-2 rounded">
+                                    {sale.cancel_reason}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Collapsible>
               </Card>
             );
           })
         )}
       </div>
-
-      {/* Sale Details Modal */}
-      {showDetails && selectedSale && (
-        <Dialog open={showDetails} onOpenChange={setShowDetails}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                Detalhes da Venda #{selectedSale.id.slice(-8)}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-6">
-              {/* Sale Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium mb-2">Informações da Venda</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Data:</span>
-                      <span>{format(new Date(selectedSale.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Status:</span>
-                      {getStatusBadge(selectedSale)}
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Pagamento:</span>
-                      <span>{paymentMethodLabels[selectedSale.payment_method]}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-medium mb-2">Valores</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Subtotal:</span>
-                      <span>{formatCurrency(Number(selectedSale.subtotal || selectedSale.total))}</span>
-                    </div>
-                    {selectedSale.discount_value && selectedSale.discount_value > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Desconto:</span>
-                        <span>
-                          {selectedSale.discount_type === 'percentage' 
-                            ? `${selectedSale.discount_value}%` 
-                            : formatCurrency(selectedSale.discount_value)
-                          }
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between font-medium">
-                      <span>Total:</span>
-                      <span>{formatCurrency(Number(selectedSale.total))}</span>
-                    </div>
-                    {selectedSale.total_profit !== undefined && (
-                      <>
-                        <div className="flex justify-between text-green-600">
-                          <span>Lucro:</span>
-                          <span>{formatCurrency(selectedSale.total_profit)}</span>
-                        </div>
-                        <div className="flex justify-between text-muted-foreground">
-                          <span>Margem:</span>
-                          <span>{(selectedSale.profit_margin_percentage || 0).toFixed(1)}%</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Sale Items */}
-              <div>
-                <h4 className="font-medium mb-3">Itens da Venda</h4>
-                {loadingItems ? (
-                  <div className="text-center py-4">
-                    <div className="text-muted-foreground">Carregando itens...</div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {saleItems.map((item) => (
-                      <Card key={item.id} className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">{item.product_name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Quantidade: {item.quantity} × {formatCurrency(item.unit_price)}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium">{formatCurrency(item.total_price)}</p>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Notes */}
-              {selectedSale.note && (
-                <div>
-                  <h4 className="font-medium mb-2">Observações</h4>
-                  <p className="text-sm text-muted-foreground bg-muted p-3 rounded">
-                    {selectedSale.note}
-                  </p>
-                </div>
-              )}
-
-              {/* Cancel Info */}
-              {selectedSale.canceled && (
-                <div>
-                  <h4 className="font-medium mb-2">Informações do Cancelamento</h4>
-                  <div className="text-sm space-y-1">
-                    {selectedSale.canceled_at && (
-                      <p>
-                        <span className="text-muted-foreground">Data do cancelamento:</span>{" "}
-                        {format(new Date(selectedSale.canceled_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                      </p>
-                    )}
-                    {selectedSale.cancel_reason && (
-                      <p>
-                        <span className="text-muted-foreground">Motivo:</span> {selectedSale.cancel_reason}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 }
