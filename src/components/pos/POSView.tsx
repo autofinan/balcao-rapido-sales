@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ProductGrid } from "./ProductGrid";
-import { CartItem, Cart } from "./Cart";
 import { PaymentModal } from "./PaymentModal";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,34 +39,6 @@ export function POSView() {
     });
   };
 
-  const updateQuantity = (id: string, quantity: number) => {
-    if (quantity <= 0) {
-      setCart(current => current.filter(item => item.id !== id));
-      return;
-    }
-    
-    setCart(current =>
-      current.map(item => {
-        if (item.id === id) {
-          if (quantity > item.stock) {
-            toast({
-              title: "Estoque insuficiente",
-              description: `Apenas ${item.stock} unidades disponíveis`,
-              variant: "destructive"
-            });
-            return item;
-          }
-          return { ...item, quantity };
-        }
-        return item;
-      })
-    );
-  };
-
-  const removeFromCart = (id: string) => {
-    setCart(current => current.filter(item => item.id !== id));
-  };
-
   const clearCart = () => {
     setCart([]);
   };
@@ -89,28 +58,12 @@ export function POSView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Ponto de Venda</h1>
-        <Button variant="outline" onClick={clearCart} disabled={cart.length === 0}>
-          Limpar Carrinho
-        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Produtos</h2>
-          <ProductGrid onAddToCart={addToCart} />
-        </Card>
-
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Carrinho</h2>
-          <Cart
-            items={cart}
-            onUpdateQuantity={updateQuantity}
-            onRemoveItem={removeFromCart}
-            total={total}
-            onCheckout={() => setShowPayment(true)}
-          />
-        </Card>
-      </div>
+      <Card className="p-6">
+        <h2 className="text-xl font-semibold mb-4">Produtos</h2>
+        <ProductGrid onAddToCart={addToCart} />
+      </Card>
 
       <PaymentModal
         open={showPayment}
