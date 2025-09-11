@@ -70,10 +70,8 @@ export default function Index() {
         
         {/* Container principal para o Header e o conteúdo. A classe 'flex-1' faz com que ocupe todo o espaço restante */}
         <div className="flex-1 flex flex-col">
-          {/* Adicionamos margem à esquerda e ajustamos a posição para que o Header não sobreponha a sidebar */}
-          <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:ml-72">
-            <Header />
-          </header>
+          {/* Removido a classe 'lg:ml-72' do Header, pois o flexbox já trata do espaçamento */}
+          <Header />
           
           <main className="flex-1 p-4 md:p-6 overflow-auto">
             {renderContent()}
