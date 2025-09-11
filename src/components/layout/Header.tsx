@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function Header() {
+export default function Header() {
   const { user, signOut } = useAuth();
   const { cartItems } = useCart(); // 👈 Obtemos os itens do carrinho
   
