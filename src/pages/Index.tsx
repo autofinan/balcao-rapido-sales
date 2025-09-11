@@ -11,6 +11,7 @@ import { CategoriesView } from "@/components/categories/CategoriesView";
 import { SalesViewEnhanced } from "@/components/sales/SalesViewEnhanced";
 import { BulkProductsView } from "@/components/products/BulkProductsView";
 import { ImportCSVView } from "@/components/products/ImportCSVView";
+
 import { StockAdjustmentView } from "@/components/inventory/StockAdjustmentView";
 import { ReportsViewEnhanced } from "@/components/reports/ReportsViewEnhanced";
 import { BudgetsView } from "@/components/budgets/BudgetsView";
