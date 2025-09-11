@@ -7,7 +7,7 @@ import { useAuth } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import Header from "./components/Header"; // ✅ novo header com ícone do carrinho
+import Header from "./layout/Header"; // ✅ novo header com ícone do carrinho
 
 const queryClient = new QueryClient();
 
