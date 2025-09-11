@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
-import { Header } from "@/components/layout/Header";
+import Header from "@/components/layout/Header";
 import { DashboardStatsInteractive } from "@/components/layout/DashboardStatsInteractive";
 import { ProductsView } from "@/components/products/ProductsView";
 import { POSView } from "@/components/pos/POSView";
