@@ -7,7 +7,10 @@ import { useAuth } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import Header from "./components/layout/Header"; // ✅ novo header com ícone do carrinho
+import Header from "./components/layout/Header";
+
+// Importa o SidebarProvider
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 const queryClient = new QueryClient();
 
@@ -31,20 +34,22 @@ function App() {
         <Toaster />
         <Sonner />
 
-        {/* ✅ Header visível em todas as páginas após login */}
-        {user && <Header />}
+        {/* Adicionamos o SidebarProvider aqui para envolver toda a aplicação */}
+        <SidebarProvider>
+          {user && <Header />}
 
-        <Routes>
-          <Route
-            path="/auth"
-            element={user ? <Navigate to="/" replace /> : <Auth />}
-          />
-          <Route
-            path="/"
-            element={user ? <Index /> : <Navigate to="/auth" replace />}
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+          <Routes>
+            <Route
+              path="/auth"
+              element={user ? <Navigate to="/" replace /> : <Auth />}
+            />
+            <Route
+              path="/"
+              element={user ? <Index /> : <Navigate to="/auth" replace />}
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </SidebarProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
