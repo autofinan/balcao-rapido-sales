@@ -7,6 +7,7 @@ import { useAuth } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Header from "./components/Header"; // ✅ novo header com ícone do carrinho
 
 const queryClient = new QueryClient();
 
@@ -29,9 +30,19 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Sonner />
+
+        {/* ✅ Header visível em todas as páginas após login */}
+        {user && <Header />}
+
         <Routes>
-          <Route path="/auth" element={user ? <Navigate to="/" replace /> : <Auth />} />
-          <Route path="/" element={user ? <Index /> : <Navigate to="/auth" replace />} />
+          <Route
+            path="/auth"
+            element={user ? <Navigate to="/" replace /> : <Auth />}
+          />
+          <Route
+            path="/"
+            element={user ? <Index /> : <Navigate to="/auth" replace />}
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </TooltipProvider>
