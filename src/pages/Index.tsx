@@ -14,7 +14,7 @@ import { ImportCSVView } from "@/components/products/ImportCSVView";
 
 import { StockAdjustmentView } from "@/components/inventory/StockAdjustmentView";
 import { ReportsViewEnhanced } from "@/components/reports/ReportsViewEnhanced";
-import { BudgetsView } from "@/components/budgets/BudgetsView";
+import { BudgetsView } from "@/components/budgets/Budgets/BudgetsView";
 import { ExpensesView } from "@/components/expenses/ExpensesView";
 
 type View = "dashboard" | "pos" | "products" | "categories" | "sales" | "bulk-products" | "import-csv" | "stock-adjustment" | "reports" | "budgets" | "expenses";
@@ -63,14 +63,9 @@ export default function Index() {
 
   return (
     <SidebarProvider>
-      {/* Container principal que define o layout flexível */}
       <div className="flex min-h-screen bg-background">
-        {/* O AppSidebar com largura definida e flex-shrink-0 para não encolher */}
-        <div className="hidden lg:block w-72 flex-shrink-0 border-r">
-          <AppSidebar currentView={currentView} onViewChange={setCurrentView} />
-        </div>
+        <AppSidebar currentView={currentView} onViewChange={setCurrentView} />
         
-        {/* Container principal do conteúdo, ocupando o restante do espaço */}
         <div className="flex-1 flex flex-col overflow-x-hidden">
           <Header />
           <main className="flex-1 p-4 md:p-6 overflow-auto">
