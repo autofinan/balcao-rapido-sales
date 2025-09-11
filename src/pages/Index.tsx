@@ -63,12 +63,12 @@ export default function Index() {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen">
-        {/* Usamos a classe 'lg:block' para que a sidebar apareça apenas em telas grandes */}
+        {/* A sidebar com largura fixa e flex-shrink-0 */}
         <div className="hidden lg:block w-72 flex-shrink-0 border-r">
           <AppSidebar currentView={currentView} onViewChange={setCurrentView} />
         </div>
         
-        {/* Container principal para o Header e o conteúdo. A classe 'flex-1' faz ele ocupar todo o espaço restante */}
+        {/* Container principal para o Header e o conteúdo. A classe 'flex-1' faz com que ocupe todo o espaço restante */}
         <div className="flex-1 flex flex-col">
           {/* Adicionamos margem à esquerda e ajustamos a posição para que o Header não sobreponha a sidebar */}
           <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:ml-72">
