@@ -1,3 +1,5 @@
+// src/pages/Index.tsx
+
 import { useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
@@ -61,9 +63,15 @@ export default function Index() {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar currentView={currentView} onViewChange={setCurrentView} />
-        <div className="flex-1 flex flex-col">
+      {/* Container principal que define o layout flexível */}
+      <div className="flex min-h-screen bg-background">
+        {/* O AppSidebar com largura definida e flex-shrink-0 para não encolher */}
+        <div className="hidden lg:block w-72 flex-shrink-0 border-r">
+          <AppSidebar currentView={currentView} onViewChange={setCurrentView} />
+        </div>
+        
+        {/* Container principal do conteúdo, ocupando o restante do espaço */}
+        <div className="flex-1 flex flex-col overflow-x-hidden">
           <Header />
           <main className="flex-1 p-4 md:p-6 overflow-auto">
             {renderContent()}
