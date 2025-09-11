@@ -14,7 +14,8 @@ import { ImportCSVView } from "@/components/products/ImportCSVView";
 
 import { StockAdjustmentView } from "@/components/inventory/StockAdjustmentView";
 import { ReportsViewEnhanced } from "@/components/reports/ReportsViewEnhanced";
-import { BudgetsView } from "@/components/budgets/Budgets/BudgetsView";
+// 👈 CORREÇÃO AQUI: Remove a pasta duplicada 'Budgets'
+import { BudgetsView } from "@/components/budgets/BudgetsView";
 import { ExpensesView } from "@/components/expenses/ExpensesView";
 
 type View = "dashboard" | "pos" | "products" | "categories" | "sales" | "bulk-products" | "import-csv" | "stock-adjustment" | "reports" | "budgets" | "expenses";
