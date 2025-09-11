@@ -11,10 +11,8 @@ import { CategoriesView } from "@/components/categories/CategoriesView";
 import { SalesViewEnhanced } from "@/components/sales/SalesViewEnhanced";
 import { BulkProductsView } from "@/components/products/BulkProductsView";
 import { ImportCSVView } from "@/components/products/ImportCSVView";
-
 import { StockAdjustmentView } from "@/components/inventory/StockAdjustmentView";
 import { ReportsViewEnhanced } from "@/components/reports/ReportsViewEnhanced";
-// 👈 CORREÇÃO AQUI: Remove a pasta duplicada 'Budgets'
 import { BudgetsView } from "@/components/budgets/BudgetsView";
 import { ExpensesView } from "@/components/expenses/ExpensesView";
 
