@@ -11,7 +11,6 @@ import { CategoriesView } from "@/components/categories/CategoriesView";
 import { SalesViewEnhanced } from "@/components/sales/SalesViewEnhanced";
 import { BulkProductsView } from "@/components/products/BulkProductsView";
 import { ImportCSVView } from "@/components/products/ImportCSVView";
-
 import { StockAdjustmentView } from "@/components/inventory/StockAdjustmentView";
 import { ReportsViewEnhanced } from "@/components/reports/ReportsViewEnhanced";
 import { BudgetsView } from "@/components/budgets/BudgetsView";
@@ -63,11 +62,19 @@ export default function Index() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-background">
-        <AppSidebar currentView={currentView} onViewChange={setCurrentView} />
+      <div className="flex min-h-screen">
+        {/* Usamos a classe 'lg:block' para que a sidebar apareça apenas em telas grandes */}
+        <div className="hidden lg:block w-72 flex-shrink-0 border-r">
+          <AppSidebar currentView={currentView} onViewChange={setCurrentView} />
+        </div>
         
-        <div className="flex-1 flex flex-col overflow-x-hidden">
-          <Header />
+        {/* Container principal para o Header e o conteúdo. A classe 'flex-1' faz ele ocupar todo o espaço restante */}
+        <div className="flex-1 flex flex-col">
+          {/* Adicionamos margem à esquerda e ajustamos a posição para que o Header não sobreponha a sidebar */}
+          <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:ml-72">
+            <Header />
+          </header>
+          
           <main className="flex-1 p-4 md:p-6 overflow-auto">
             {renderContent()}
           </main>
