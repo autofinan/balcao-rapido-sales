@@ -68,7 +68,8 @@ const menuItems = [
 
 export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
   return (
-    <Sidebar collapsible="icon" className="border-r">
+    // Adiciona a propriedade 'static' para que o Sidebar respeite o flexbox do pai.
+    <Sidebar static collapsible="icon" className="border-r"> 
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
