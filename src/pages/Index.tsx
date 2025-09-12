@@ -1,4 +1,4 @@
-// src/pages/Index.tsx - Versão Corrigida
+// src/pages/Index.tsx
 
 import { useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -20,6 +20,7 @@ type View = "dashboard" | "pos" | "products" | "categories" | "sales" | "bulk-pr
 
 export default function Index() {
   const [currentView, setCurrentView] = useState<View>("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const renderContent = () => {
     switch (currentView) {
@@ -62,40 +63,52 @@ export default function Index() {
 
   return (
     <SidebarProvider>
-      {/* Layout usando CSS Grid para controle preciso */}
-      <div className="min-h-screen bg-background grid lg:grid-cols-[280px_1fr]">
+      {/* Layout usando Grid - SEM margin-left problemático */}
+      <div className="min-h-screen bg-background">
         
-        {/* Sidebar - Desktop: coluna fixa, Mobile: oculta */}
-        <aside className="hidden lg:flex border-r bg-background">
-          <AppSidebar 
-            currentView={currentView} 
-            onViewChange={setCurrentView}
-          />
-        </aside>
-        
-        {/* Container Principal */}
-        <div className="flex flex-col min-h-screen overflow-hidden">
-          
-          {/* Header */}
-          <Header />
-          
-          {/* Conteúdo Principal */}
-          <main className="flex-1 overflow-auto">
-            <div className="p-4 md:p-6">
-              {renderContent()}
+        {/* Sidebar Mobile - Overlay completo */}
+        {sidebarOpen && (
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+            {/* Sidebar Mobile */}
+            <div className="fixed top-0 left-0 h-full w-72 bg-background border-r z-50 lg:hidden">
+              <AppSidebar 
+                currentView={currentView} 
+                onViewChange={(view) => {
+                  setCurrentView(view);
+                  setSidebarOpen(false); // Fecha após selecionar
+                }}
+                onCloseMobile={() => setSidebarOpen(false)}
+              />
             </div>
-          </main>
+          </>
+        )}
+        
+        {/* Layout Desktop: Grid com sidebar fixa */}
+        <div className="lg:grid lg:grid-cols-[280px_1fr] min-h-screen">
+          
+          {/* Sidebar Desktop - Dentro do Grid */}
+          <aside className="hidden lg:block bg-background border-r">
+            <AppSidebar 
+              currentView={currentView} 
+              onViewChange={setCurrentView}
+            />
+          </aside>
+          
+          {/* Container Principal - Sem margin-left */}
+          <div className="flex flex-col min-h-screen">
+            <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+            
+            <main className="flex-1 p-4 md:p-6 overflow-auto">
+              {renderContent()}
+            </main>
+          </div>
           
         </div>
-        
-        {/* Sidebar Mobile - Overlay */}
-        <div className="lg:hidden">
-          <AppSidebar 
-            currentView={currentView} 
-            onViewChange={setCurrentView}
-          />
-        </div>
-        
       </div>
     </SidebarProvider>
   );
