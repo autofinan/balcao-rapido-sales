@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Header from "./components/layout/Header";
+import { AppSidebar } from "./components/layout/AppSidebar";
 
 // Importa o SidebarProvider
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -34,21 +35,32 @@ function App() {
         <Toaster />
         <Sonner />
 
-        {/* Adicionamos o SidebarProvider aqui para envolver toda a aplicação */}
         <SidebarProvider>
-          {user && <Header />}
+          {user ? (
+            <div className="flex h-screen">
+              {/* Sidebar fixa */}
+              <aside className="w-64 border-r bg-white">
+                <AppSidebar currentView="dashboard" onViewChange={() => {}} />
+              </aside>
 
-          <Routes>
-            <Route
-              path="/auth"
-              element={user ? <Navigate to="/" replace /> : <Auth />}
-            />
-            <Route
-              path="/"
-              element={user ? <Index /> : <Navigate to="/auth" replace />}
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              {/* Área principal */}
+              <div className="flex-1 flex flex-col">
+                <Header />
+
+                <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+              </div>
+            </div>
+          ) : (
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="*" element={<Navigate to="/auth" replace />} />
+            </Routes>
+          )}
         </SidebarProvider>
       </TooltipProvider>
     </QueryClientProvider>
