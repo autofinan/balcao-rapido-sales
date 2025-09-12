@@ -1,4 +1,4 @@
-// src/components/ui/sidebar-fixed.tsx
+// src/components/ui/sidebar.tsx
 // Versão corrigida do sidebar que resolve o problema de deslocamento
 
 import * as React from "react"
