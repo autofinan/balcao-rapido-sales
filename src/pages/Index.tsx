@@ -8,7 +8,7 @@ import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from '@/components/ui/sidebar-fixed'; // USAR O ARQUIVO CORRIGIDO
+from '@/components/ui/sidebar'; // Volta ao import original
 import { Home, ShoppingCart, Package, Users, BarChart3, Settings } from 'lucide-react';
 
 // Header Component
