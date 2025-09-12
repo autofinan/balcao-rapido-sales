@@ -1,3 +1,4 @@
+// src/pages/Index.tsx - Usando o sidebar corrigido
 import React from 'react';
 import { 
   Sidebar,
@@ -10,10 +11,12 @@ import {
 } from '@/components/ui/sidebar';
 import { Home, ShoppingCart, Package, Users, BarChart3, Settings } from 'lucide-react';
 
+// Header Component
 const Header = () => {
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center gap-4">
+        {/* Trigger só aparece no mobile */}
         <SidebarTrigger className="lg:hidden" />
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-semibold text-gray-900">Sistema POS</h1>
@@ -23,6 +26,7 @@ const Header = () => {
   );
 };
 
+// Sidebar Content Component
 const AppSidebarContent = () => {
   const menuItems = [
     { icon: Home, label: 'Dashboard', href: '#', active: true },
@@ -81,6 +85,7 @@ const AppSidebarContent = () => {
   );
 };
 
+// Main Content Component
 const MainContent = () => {
   return (
     <div className="p-6 space-y-6">
@@ -89,6 +94,7 @@ const MainContent = () => {
         <p className="text-gray-600">Visão geral do seu sistema POS</p>
       </div>
 
+      {/* Cards de estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
@@ -143,6 +149,7 @@ const MainContent = () => {
         </div>
       </div>
 
+      {/* Tabela de vendas recentes */}
       <div className="bg-white rounded-lg shadow-sm border">
         <div className="p-6 border-b">
           <h3 className="text-lg font-semibold text-gray-900">Vendas Recentes</h3>
@@ -210,18 +217,23 @@ const MainContent = () => {
   );
 };
 
+// Componente principal
 const Index = () => {
   return (
     <SidebarProvider defaultOpen={true}>
+      {/* Layout flex sem CSS variables problemáticas */}
       <div className="flex min-h-screen bg-gray-50">
+        {/* Sidebar - Desktop: sempre visível, Mobile: controlado por Sheet */}
         <Sidebar className="hidden lg:flex">
           <AppSidebarContent />
         </Sidebar>
 
+        {/* Sidebar Mobile - Sheet automático */}
         <Sidebar className="lg:hidden">
           <AppSidebarContent />
         </Sidebar>
 
+        {/* Área de conteúdo principal */}
         <SidebarInset>
           <Header />
           <main className="flex-1 overflow-auto">
