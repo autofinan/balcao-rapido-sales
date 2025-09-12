@@ -1,4 +1,4 @@
-// src/pages/Index.tsx
+// src/pages/Index.tsx - Versão Corrigida
 
 import { useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -20,7 +20,6 @@ type View = "dashboard" | "pos" | "products" | "categories" | "sales" | "bulk-pr
 
 export default function Index() {
   const [currentView, setCurrentView] = useState<View>("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const renderContent = () => {
     switch (currentView) {
@@ -63,35 +62,40 @@ export default function Index() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-gray-50">
-        {/* Overlay para mobile */}
-        {sidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+      {/* Layout usando CSS Grid para controle preciso */}
+      <div className="min-h-screen bg-background grid lg:grid-cols-[280px_1fr]">
         
-        {/* Sidebar para desktop e mobile */}
-        <div className={`
-          fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}>
+        {/* Sidebar - Desktop: coluna fixa, Mobile: oculta */}
+        <aside className="hidden lg:flex border-r bg-background">
           <AppSidebar 
             currentView={currentView} 
             onViewChange={setCurrentView}
-            onCloseMobile={() => setSidebarOpen(false)}
+          />
+        </aside>
+        
+        {/* Container Principal */}
+        <div className="flex flex-col min-h-screen overflow-hidden">
+          
+          {/* Header */}
+          <Header />
+          
+          {/* Conteúdo Principal */}
+          <main className="flex-1 overflow-auto">
+            <div className="p-4 md:p-6">
+              {renderContent()}
+            </div>
+          </main>
+          
+        </div>
+        
+        {/* Sidebar Mobile - Overlay */}
+        <div className="lg:hidden">
+          <AppSidebar 
+            currentView={currentView} 
+            onViewChange={setCurrentView}
           />
         </div>
         
-        {/* Container principal */}
-        <div className="flex-1 flex flex-col lg:ml-72 min-w-0">
-          <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
-          
-          <main className="flex-1 p-4 md:p-6 overflow-auto">
-            {renderContent()}
-          </main>
-        </div>
       </div>
     </SidebarProvider>
   );
