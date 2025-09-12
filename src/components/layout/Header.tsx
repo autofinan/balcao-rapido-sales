@@ -12,7 +12,7 @@ import {
 
 interface HeaderProps {
   onMenuToggle?: () => void;
-  onCartToggle?: () => void; // NOVA PROP: para abrir o carrinho
+  onCartToggle?: () => void;
 }
 
 export default function Header({ onMenuToggle, onCartToggle }: HeaderProps) {
@@ -22,9 +22,13 @@ export default function Header({ onMenuToggle, onCartToggle }: HeaderProps) {
   const totalItemsInCart = (cartItems || []).reduce((total, item) => total + item.quantity, 0);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 max-w-screen-2xl items-center">
+    <header className="flex-shrink-0 border-b border-border bg-background">
+      <div className="flex h-16 items-center px-4 lg:px-6">
+        
+        {/* Lado Esquerdo */}
         <div className="flex items-center gap-3">
+          
+          {/* Botão Menu Mobile */}
           <Button
             variant="ghost"
             size="icon"
@@ -34,6 +38,7 @@ export default function Header({ onMenuToggle, onCartToggle }: HeaderProps) {
             <Menu className="h-5 w-5" />
           </Button>
           
+          {/* Logo e Título */}
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80">
               <Store className="h-4 w-4 text-primary-foreground" />
@@ -45,31 +50,34 @@ export default function Header({ onMenuToggle, onCartToggle }: HeaderProps) {
           </div>
         </div>
 
-        <div className="flex flex-1 items-center justify-end space-x-4">
+        {/* Lado Direito */}
+        <div className="flex flex-1 items-center justify-end space-x-2">
           
+          {/* Botão Carrinho */}
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={onCartToggle} // ALTERADO: Agora usa a prop
+            onClick={onCartToggle}
             className="relative"
           >
             <ShoppingCart className="h-5 w-5" />
             {totalItemsInCart > 0 && (
               <Badge 
                 variant="destructive" 
-                className="absolute -top-1 -right-1 h-4 w-4 rounded-full p-0 flex items-center justify-center text-xs"
+                className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
               >
                 {totalItemsInCart}
               </Badge>
             )}
           </Button>
 
+          {/* Menu do Usuário */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-2">
                 <User className="h-4 w-4" />
                 <span className="hidden sm:inline-block max-w-32 truncate">
-                  {user?.email}
+                  {user?.email || 'Usuário'}
                 </span>
               </Button>
             </DropdownMenuTrigger>
@@ -81,6 +89,7 @@ export default function Header({ onMenuToggle, onCartToggle }: HeaderProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        
       </div>
     </header>
   );
