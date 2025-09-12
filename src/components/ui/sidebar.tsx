@@ -156,13 +156,16 @@ const SidebarProvider = React.forwardRef<
 )
 SidebarProvider.displayName = "SidebarProvider"
 
+// ============================================================
+// MODIFICAÇÃO INICIO: Componente Sidebar com suporte para static
+// ============================================================
 const Sidebar = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
     side?: "left" | "right"
     variant?: "sidebar" | "floating" | "inset"
     collapsible?: "offcanvas" | "icon" | "none"
-    static?: boolean // Adicionamos a propriedade 'static' aqui
+    static?: boolean
   }
 >(
   (
@@ -170,6 +173,7 @@ const Sidebar = React.forwardRef<
       side = "left",
       variant = "sidebar",
       collapsible = "offcanvas",
+      static: isStatic = false,
       className,
       children,
       ...props
@@ -213,6 +217,30 @@ const Sidebar = React.forwardRef<
       )
     }
 
+    // MODIFICAÇÃO PRINCIPAL: Comportamento para sidebar estático
+    if (isStatic) {
+      return (
+        <div
+          ref={ref}
+          data-side={side}
+          data-variant={variant}
+          data-state={state}
+          data-collapsible={collapsible}
+          className={cn(
+            "flex h-full flex-col bg-sidebar text-sidebar-foreground border-r",
+            collapsible === "icon" && state === "collapsed" 
+              ? "w-[--sidebar-width-icon]" 
+              : "w-[--sidebar-width]",
+            className
+          )}
+          {...props}
+        >
+          {children}
+        </div>
+      )
+    }
+
+    // Comportamento original para sidebar não estático (fixed/sticky)
     return (
       <div
         ref={ref}
@@ -222,14 +250,12 @@ const Sidebar = React.forwardRef<
         data-variant={variant}
         data-side={side}
       >
-        {/* Removemos a div de placeholder que não é mais necessária */}
         <div
           className={cn(
             "duration-200 sticky top-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-            // Adjust the padding for floating and inset variants.
             variant === "floating" || variant === "inset"
               ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
               : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
@@ -249,6 +275,9 @@ const Sidebar = React.forwardRef<
   }
 )
 Sidebar.displayName = "Sidebar"
+// ============================================================
+// MODIFICAÇÃO FIM: Componente Sidebar
+// ============================================================
 
 const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,
