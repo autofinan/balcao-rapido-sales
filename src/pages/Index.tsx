@@ -8,7 +8,7 @@ import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from '@/components/ui/sidebar'; // Import corrigido
+} from '@/components/ui/sidebar';
 import { Home, ShoppingCart, Package, Users, BarChart3, Settings } from 'lucide-react';
 
 // Header Component
