@@ -22,7 +22,7 @@ export default function Header({ onMenuToggle, onCartToggle }: HeaderProps) {
   const totalItemsInCart = (cartItems || []).reduce((total, item) => total + item.quantity, 0);
 
   return (
-    <header className="flex-shrink-0 border-b border-border bg-background">
+    <header className="flex-shrink-0 border-b bg-background">
       <div className="flex h-16 items-center px-4 lg:px-6">
         
         {/* Lado Esquerdo */}
