@@ -1,5 +1,3 @@
-// src/components/layout/AppSidebar.tsx
-
 import {
   Calculator,
   Package,
@@ -15,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom"; // 🔑 Importa navegação
+import { useNavigate } from "react-router-dom";
 
 type View =
   | "dashboard"
@@ -36,18 +34,18 @@ interface AppSidebarProps {
   onCloseMobile?: () => void;
 }
 
-const menuItems = [
-  { id: "dashboard" as View, title: "Dashboard", icon: Home, path: "/" },
-  { id: "pos" as View, title: "PDV", icon: Calculator, path: "/pos" },
-  { id: "budgets" as View, title: "Orçamentos", icon: FileText, path: "/budgets" },
-  { id: "expenses" as View, title: "Despesas", icon: Receipt, path: "/expenses" },
-  { id: "products" as View, title: "Produtos", icon: Package, path: "/products" },
-  { id: "bulk-products" as View, title: "Cadastro em Lote", icon: Upload, path: "/bulk-products" },
-  { id: "import-csv" as View, title: "Importar CSV", icon: Download, path: "/import-csv" },
-  { id: "stock-adjustment" as View, title: "Ajuste de Estoque", icon: Settings, path: "/stock-adjustment" },
-  { id: "categories" as View, title: "Categorias", icon: FolderTree, path: "/categories" },
-  { id: "sales" as View, title: "Vendas", icon: BarChart3, path: "/sales" },
-  { id: "reports" as View, title: "Relatórios", icon: TrendingUp, path: "/reports" },
+const menuItems: { id: View; title: string; icon: any; path: string }[] = [
+  { id: "dashboard", title: "Dashboard", icon: Home, path: "/" },
+  { id: "pos", title: "PDV", icon: Calculator, path: "/pos" },
+  { id: "budgets", title: "Orçamentos", icon: FileText, path: "/budgets" },
+  { id: "expenses", title: "Despesas", icon: Receipt, path: "/expenses" },
+  { id: "products", title: "Produtos", icon: Package, path: "/products" },
+  { id: "bulk-products", title: "Cadastro em Lote", icon: Upload, path: "/bulk-products" },
+  { id: "import-csv", title: "Importar CSV", icon: Download, path: "/import-csv" },
+  { id: "stock-adjustment", title: "Ajuste de Estoque", icon: Settings, path: "/stock-adjustment" },
+  { id: "categories", title: "Categorias", icon: FolderTree, path: "/categories" },
+  { id: "sales", title: "Vendas", icon: BarChart3, path: "/sales" },
+  { id: "reports", title: "Relatórios", icon: TrendingUp, path: "/reports" },
 ];
 
 export function AppSidebar({ currentView, onViewChange, onCloseMobile }: AppSidebarProps) {
@@ -55,7 +53,8 @@ export function AppSidebar({ currentView, onViewChange, onCloseMobile }: AppSide
 
   const handleItemClick = (view: View, path: string) => {
     onViewChange(view);
-    navigate(path); // 🔑 Agora muda a rota
+    navigate(path);
+    if (onCloseMobile) onCloseMobile(); // fecha menu mobile automaticamente
   };
 
   return (
@@ -72,7 +71,7 @@ export function AppSidebar({ currentView, onViewChange, onCloseMobile }: AppSide
           </div>
         </div>
 
-        {/* Botão fechar apenas no mobile */}
+        {/* Botão fechar mobile */}
         {onCloseMobile && (
           <Button
             variant="ghost"
@@ -106,7 +105,7 @@ export function AppSidebar({ currentView, onViewChange, onCloseMobile }: AppSide
         </ul>
       </nav>
 
-      {/* Footer da Sidebar */}
+      {/* Footer */}
       <div className="p-4 border-t">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
