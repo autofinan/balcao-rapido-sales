@@ -20,6 +20,7 @@ type View = "dashboard" | "pos" | "products" | "categories" | "sales" | "bulk-pr
 
 export default function Index() {
   const [currentView, setCurrentView] = useState<View>("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const renderContent = () => {
     switch (currentView) {
@@ -62,16 +63,30 @@ export default function Index() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen">
-        {/* A sidebar com largura fixa e flex-shrink-0 */}
-        <div className="hidden lg:block w-72 flex-shrink-0 border-r">
-          <AppSidebar currentView={currentView} onViewChange={setCurrentView} />
+      <div className="flex min-h-screen bg-gray-50">
+        {/* Overlay para mobile */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        
+        {/* Sidebar para desktop e mobile */}
+        <div className={`
+          fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}>
+          <AppSidebar 
+            currentView={currentView} 
+            onViewChange={setCurrentView}
+            onCloseMobile={() => setSidebarOpen(false)}
+          />
         </div>
         
-        {/* Container principal para o Header e o conteúdo. A classe 'flex-1' faz com que ocupe todo o espaço restante */}
-        <div className="flex-1 flex flex-col">
-          {/* Removido a classe 'lg:ml-72' do Header, pois o flexbox já trata do espaçamento */}
-          <Header />
+        {/* Container principal */}
+        <div className="flex-1 flex flex-col lg:ml-72 min-w-0">
+          <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
           
           <main className="flex-1 p-4 md:p-6 overflow-auto">
             {renderContent()}
