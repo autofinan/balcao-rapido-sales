@@ -1,4 +1,3 @@
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Store, User, LogOut, ShoppingCart, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,26 +12,19 @@ import {
 
 interface HeaderProps {
   onMenuToggle?: () => void;
+  onCartToggle?: () => void; // NOVA PROP: para abrir o carrinho
 }
 
-export default function Header({ onMenuToggle }: HeaderProps) {
+export default function Header({ onMenuToggle, onCartToggle }: HeaderProps) {
   const { user, signOut } = useAuth();
   const { cartItems } = useCart();
   
-  // CORREÇÃO: Usamos o operador OR (||) para garantir que cartItems é um array,
-  // prevenindo o erro "cannot read properties of undefined".
   const totalItemsInCart = (cartItems || []).reduce((total, item) => total + item.quantity, 0);
-
-  const openCart = () => {
-    // Lógica para abrir o drawer ou modal do carrinho.
-    console.log("Abrindo o carrinho...");
-  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 max-w-screen-2xl items-center">
         <div className="flex items-center gap-3">
-          {/* Botão de menu para mobile - substitui o SidebarTrigger */}
           <Button
             variant="ghost"
             size="icon"
@@ -55,7 +47,12 @@ export default function Header({ onMenuToggle }: HeaderProps) {
 
         <div className="flex flex-1 items-center justify-end space-x-4">
           
-          <Button variant="ghost" size="icon" onClick={openCart} className="relative">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onCartToggle} // ALTERADO: Agora usa a prop
+            className="relative"
+          >
             <ShoppingCart className="h-5 w-5" />
             {totalItemsInCart > 0 && (
               <Badge 
