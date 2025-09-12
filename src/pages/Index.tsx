@@ -15,12 +15,14 @@ import { StockAdjustmentView } from "@/components/inventory/StockAdjustmentView"
 import { ReportsViewEnhanced } from "@/components/reports/ReportsViewEnhanced";
 import { BudgetsView } from "@/components/budgets/BudgetsView";
 import { ExpensesView } from "@/components/expenses/ExpensesView";
+import CartDrawer from "@/components/cart/CartDrawer"; // ADICIONAR IMPORT
 
 type View = "dashboard" | "pos" | "products" | "categories" | "sales" | "bulk-products" | "import-csv" | "stock-adjustment" | "reports" | "budgets" | "expenses";
 
 export default function Index() {
   const [currentView, setCurrentView] = useState<View>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false); // NOVO ESTADO PARA O CARRINHO
 
   const renderContent = () => {
     switch (currentView) {
@@ -86,12 +88,22 @@ export default function Index() {
         
         {/* Container principal */}
         <div className="flex-1 flex flex-col lg:ml-72 min-w-0">
-          <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+          {/* ADICIONAR onCartToggle AQUI */}
+          <Header 
+            onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+            onCartToggle={() => setCartOpen(true)}
+          />
           
           <main className="flex-1 p-4 md:p-6 overflow-auto">
             {renderContent()}
           </main>
         </div>
+
+        {/* ADICIONAR O CARTDRAWER */}
+        <CartDrawer 
+          isOpen={cartOpen} 
+          onClose={() => setCartOpen(false)} 
+        />
       </div>
     </SidebarProvider>
   );
