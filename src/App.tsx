@@ -31,7 +31,7 @@ import ExpensesPage from "./components/expenses/ExpensesDashboard";
 import SalesPage from "./components/sales/SalesView";
 import ReportsPage from "./components/reports/ReportsView";
 import CategoriesPage from "./components/categories/CategoriesView";
-import StockAdjustmentPage from "./components/stock/StockAdjustmentView";
+import StockAdjustmentPage from "./components/inventory/StockAdjustmentView";
 
 const queryClient = new QueryClient();
 
