@@ -4,19 +4,28 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
+
+// Layouts
+import Header from "./components/layout/Header";
+import { AppSidebar } from "./components/layout/AppSidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
+
+// Pages
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import Header from "./components/layout/Header";
-import { AppSidebar } from "./components/layout/AppSidebar";
 
-// Import views diretamente de components
+// Product Views
 import ProductsPage from "./components/products/ProductsView";
 import BulkProductsPage from "./components/products/BulkProductsView";
 import ImportCSVPage from "./components/products/ImportCSVView";
+
+// POS
 import POSPage from "./components/pos/POSView";
+
+// Budgets, Expenses, Sales, Reports, Categories, Stock
 import BudgetsPage from "./components/budgets/BudgetsView";
 import ExpensesPage from "./components/expenses/ExpensesDashboard";
 import SalesPage from "./components/sales/SalesView";
@@ -24,13 +33,11 @@ import ReportsPage from "./components/reports/ReportsView";
 import CategoriesPage from "./components/categories/CategoriesView";
 import StockAdjustmentPage from "./components/stock/StockAdjustmentView";
 
-// Importa o SidebarProvider
-import { SidebarProvider } from "@/components/ui/sidebar";
-
 const queryClient = new QueryClient();
 
 function App() {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -43,6 +50,8 @@ function App() {
     );
   }
 
+  const currentView = location.pathname.substring(1) || "dashboard";
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -54,7 +63,10 @@ function App() {
             <div className="flex h-screen">
               {/* Sidebar fixa */}
               <aside className="w-64 border-r bg-white">
-                <AppSidebar currentView="dashboard" onViewChange={() => {}} />
+                <AppSidebar
+                  currentView={currentView}
+                  onViewChange={() => {}}
+                />
               </aside>
 
               {/* Área principal */}
