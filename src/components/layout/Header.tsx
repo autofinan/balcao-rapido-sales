@@ -29,14 +29,16 @@ export default function Header({ onMenuToggle, onCartToggle }: HeaderProps) {
         <div className="flex items-center gap-3">
           
           {/* Botão Menu Mobile */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={onMenuToggle}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+          {onMenuToggle && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={onMenuToggle}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
           
           {/* Logo e Título */}
           <div className="flex items-center gap-2">
@@ -54,22 +56,24 @@ export default function Header({ onMenuToggle, onCartToggle }: HeaderProps) {
         <div className="flex flex-1 items-center justify-end space-x-2">
           
           {/* Botão Carrinho */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onCartToggle}
-            className="relative"
-          >
-            <ShoppingCart className="h-5 w-5" />
-            {totalItemsInCart > 0 && (
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
-              >
-                {totalItemsInCart}
-              </Badge>
-            )}
-          </Button>
+          {onCartToggle && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onCartToggle}
+              className="relative"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {totalItemsInCart > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                >
+                  {totalItemsInCart}
+                </Badge>
+              )}
+            </Button>
+          )}
 
           {/* Menu do Usuário */}
           <DropdownMenu>
