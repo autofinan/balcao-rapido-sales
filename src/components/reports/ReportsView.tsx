@@ -30,7 +30,7 @@ interface DayReport {
   }[];
 }
 
-export function ReportsView() {
+export default function ReportsView() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [periodType, setPeriodType] = useState<"day" | "range" | "month">("day");
