@@ -13,7 +13,7 @@ interface Category {
   created_at?: string;
 }
 
-export function CategoriesView() {
+export default function CategoriesView() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
