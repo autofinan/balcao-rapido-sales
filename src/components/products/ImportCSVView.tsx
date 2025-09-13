@@ -20,7 +20,7 @@ interface CSVProduct {
   image_url?: string;
 }
 
-export function ImportCSVView() {
+export default function ImportCSVView() {
   const [csvData, setCsvData] = useState<CSVProduct[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
