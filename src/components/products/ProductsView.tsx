@@ -25,7 +25,7 @@ export interface Product {
   categories?: { name: string } | null;
 }
 
-export function ProductsView() {
+export default function ProductsView() {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
