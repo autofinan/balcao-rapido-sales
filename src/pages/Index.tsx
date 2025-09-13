@@ -1,4 +1,4 @@
-// src/pages/Index.tsx - APENAS CONTEÚDO (sem layout próprio)
+// src/pages/Index.tsx - corrigido para usar sales, products, profiles
 import React, { useEffect, useState } from 'react';
 import { ShoppingCart, Package, Users, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,37 +28,38 @@ const Index = () => {
   const [vendasRecentes, setVendasRecentes] = useState<VendaRecente[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+ useEffect(() => {
     carregarDashboard();
   }, []);
 
   const carregarDashboard = async () => {
     try {
       setLoading(true);
-
-      // Buscar estatísticas
+      
+      // Buscar estatísticas principais
       const [
         { data: vendas },
         { data: produtos },
         { data: clientes }
       ] = await Promise.all([
-        supabase.from('vendas').select('total, created_at'),
-        supabase.from('produtos').select('id'),
-        supabase.from('clientes').select('id')
+        supabase.from('sales').select('id, total, created_at, status'),
+        supabase.from('products').select('id'),
+        supabase.from('profiles').select('id')
       ]);
+
 
       // Calcular vendas de hoje
       const hoje = new Date().toISOString().split('T')[0];
-      const vendasHoje = vendas?.filter(v => 
+      const vendasHoje = vendas?.filter(v =>
         v.created_at.startsWith(hoje)
-      ).reduce((sum, v) => sum + v.total, 0) || 0;
+      ).reduce((sum, v) => sum + (v.total || 0), 0) || 0;
 
-      // Calcular receita mensal
+     // Calcular receita mensal
       const inicioMes = new Date();
       inicioMes.setDate(1);
-      const receitaMensal = vendas?.filter(v => 
+      const receitaMensal = vendas?.filter(v =>
         new Date(v.created_at) >= inicioMes
-      ).reduce((sum, v) => sum + v.total, 0) || 0;
+      ).reduce((sum, v) => sum + (v.total || 0), 0) || 0;
 
       setStats({
         vendasHoje,
@@ -67,31 +68,35 @@ const Index = () => {
         receitaMensal
       });
 
-      // Buscar vendas recentes
+      // Buscar vendas recentes com relação ao cliente
       const { data: vendasRecentesData } = await supabase
-        .from('vendas')
+        .from('sales')
         .select(`
           id,
           total,
           status,
           created_at,
-          clientes (nome)
+          profiles ( name )
         `)
         .order('created_at', { ascending: false })
         .limit(5);
 
       const vendasFormatadas = vendasRecentesData?.map(venda => ({
         id: venda.id,
-        cliente_nome: venda.clientes?.nome || 'Cliente não informado',
+        cliente_nome: venda.profiles?.name || 'Cliente não informado',
         total: venda.total,
         status: venda.status,
         created_at: venda.created_at
       })) || [];
 
       setVendasRecentes(vendasFormatadas);
-
+      
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
       // Se falhar, usar dados fictícios para não quebrar
       setStats({
         vendasHoje: 2450,
@@ -127,7 +132,7 @@ const Index = () => {
     }
   };
 
-  const formatarData = (data: string) => {
+ const formatarData = (data: string) => {
     return new Date(data).toLocaleString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
@@ -144,14 +149,15 @@ const Index = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
+      case 'completed':
       case 'concluída':
-      case 'concluida':
       case 'finalizada':
         return 'bg-green-100 text-green-800';
-      case 'processando':
+      case 'processing':
       case 'pendente':
         return 'bg-blue-100 text-blue-800';
+      case 'cancelled':
       case 'cancelada':
         return 'bg-red-100 text-red-800';
       default:
