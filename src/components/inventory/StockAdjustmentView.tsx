@@ -33,7 +33,7 @@ interface MovementHistory {
   };
 }
 
-export function StockAdjustmentView() {
+export default function StockAdjustmentView() {
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
