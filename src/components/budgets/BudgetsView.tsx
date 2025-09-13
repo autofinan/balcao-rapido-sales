@@ -28,7 +28,7 @@ interface Budget {
   converted_sale_id: string | null;
 }
 
-export function BudgetsView() {
+export default function BudgetsView() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
