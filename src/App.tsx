@@ -23,7 +23,7 @@ import BulkProductsPage from "./components/products/BulkProductsView";
 import ImportCSVPage from "./components/products/ImportCSVView";
 
 // POS
-import POSPage from "./components/pos/POSView";
+import { POSView as POSPage } from "./components/pos/POSView"; // 🔑 Certifique que o POSView exporta nomeado ou mude para default export
 
 // Budgets, Expenses, Sales, Reports, Categories, Stock
 import BudgetsPage from "./components/budgets/BudgetsView";
@@ -35,7 +35,7 @@ import StockAdjustmentPage from "./components/inventory/StockAdjustmentView";
 
 const queryClient = new QueryClient();
 
-function App() {
+export default function App() {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -63,10 +63,7 @@ function App() {
             <div className="flex h-screen">
               {/* Sidebar fixa */}
               <aside className="w-64 border-r bg-white">
-                <AppSidebar
-                  currentView={currentView}
-                  onViewChange={() => {}}
-                />
+                <AppSidebar currentView={currentView} onViewChange={() => {}} />
               </aside>
 
               {/* Área principal */}
@@ -102,5 +99,3 @@ function App() {
     </QueryClientProvider>
   );
 }
-
-export default App;
