@@ -22,7 +22,7 @@ interface ProductPreview {
   errors: string[];
 }
 
-export function BulkProductsView() {
+export default function BulkProductsView() {
   const [textInput, setTextInput] = useState("");
   const [previewData, setPreviewData] = useState<ProductPreview[]>([]);
   const [showPreview, setShowPreview] = useState(false);
