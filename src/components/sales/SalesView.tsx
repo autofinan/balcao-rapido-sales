@@ -40,7 +40,7 @@ const paymentMethodIcons = {
   dinheiro: Banknote
 };
 
-export function SalesView() {
+export default function SalesView() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [search, setSearch] = useState("");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
