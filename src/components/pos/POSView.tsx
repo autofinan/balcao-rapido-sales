@@ -13,7 +13,7 @@ export interface CartProduct {
   stock: number;
 }
 
-export function POSView() {
+export default function POSView() {
   const [cart, setCart] = useState<CartProduct[]>([]);
   const [showPayment, setShowPayment] = useState(false);
   const { toast } = useToast();
