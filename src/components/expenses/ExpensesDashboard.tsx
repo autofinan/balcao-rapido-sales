@@ -19,7 +19,7 @@ interface CategoryExpense {
   percentage: number;
 }
 
-export function ExpensesDashboard() {
+export default function ExpensesDashboard() {
   const [summary, setSummary] = useState<ExpensesSummary | null>(null);
   const [categories, setCategories] = useState<CategoryExpense[]>([]);
   const [loading, setLoading] = useState(true);
