@@ -36,7 +36,7 @@ const Index = () => {
     try {
       setLoading(true);
 
-      // Buscar estatísticas
+      // Buscar estatísticas principais
       const [
         { data: vendas },
         { data: produtos },
@@ -47,18 +47,21 @@ const Index = () => {
         supabase.from('profiles').select('id')
       ]);
 
-      // Calcular vendas de hoje
-      const hoje = new Date().toISOString().split('T')[0];
-      const vendasHoje =
-        vendas?.filter(v => v.created_at.startsWith(hoje))
-          .reduce((sum, v) => sum + v.total, 0) || 0;
+      const hoje = new Date();
+      const hojeStr = hoje.toISOString().split('T')[0];
+      const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 
-      // Calcular receita mensal
-      const inicioMes = new Date();
-      inicioMes.setDate(1);
+      // Vendas de hoje
+      const vendasHoje =
+        vendas
+          ?.filter(v => v.created_at.startsWith(hojeStr))
+          .reduce((sum, v) => sum + Number(v.total), 0) || 0;
+
+      // Receita mensal
       const receitaMensal =
-        vendas?.filter(v => new Date(v.created_at) >= inicioMes)
-          .reduce((sum, v) => sum + v.total, 0) || 0;
+        vendas
+          ?.filter(v => new Date(v.created_at) >= inicioMes)
+          .reduce((sum, v) => sum + Number(v.total), 0) || 0;
 
       setStats({
         vendasHoje,
@@ -67,25 +70,27 @@ const Index = () => {
         receitaMensal
       });
 
-      // Buscar vendas recentes (com cliente vinculado)
-      const { data: vendasRecentesData } = await supabase
+      // Buscar vendas recentes com cliente vinculado (full_name)
+      const { data: vendasRecentesData, error } = await supabase
         .from('sales')
         .select(`
           id,
           total,
           status,
           created_at,
-          profiles ( nome )
+          profiles ( full_name )
         `)
         .order('created_at', { ascending: false })
         .limit(5);
 
+      if (error) console.error('Erro ao buscar vendas recentes:', error);
+
       const vendasFormatadas =
         vendasRecentesData?.map(venda => ({
           id: venda.id,
-          cliente_nome: venda.profiles?.nome || 'Cliente não informado',
-          total: venda.total,
-          status: venda.status,
+          cliente_nome: venda.profiles?.full_name || 'Cliente não informado',
+          total: Number(venda.total),
+          status: venda.status || 'Concluída',
           created_at: venda.created_at
         })) || [];
 
@@ -93,7 +98,7 @@ const Index = () => {
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
 
-      // Se falhar, usar dados fictícios
+      // fallback para não quebrar a tela
       setStats({
         vendasHoje: 2450,
         totalProdutos: 1234,
@@ -145,7 +150,7 @@ const Index = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case 'concluída':
       case 'concluida':
       case 'finalizada':
