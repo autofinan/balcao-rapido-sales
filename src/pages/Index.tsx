@@ -1,4 +1,4 @@
-// src/pages/Index.tsx - corrigido para usar sales, products, profiles
+// src/pages/Index.tsx - corrigido
 import React, { useEffect, useState } from 'react';
 import { ShoppingCart, Package, Users, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,14 +28,14 @@ const Index = () => {
   const [vendasRecentes, setVendasRecentes] = useState<VendaRecente[]>([]);
   const [loading, setLoading] = useState(true);
 
- useEffect(() => {
+  useEffect(() => {
     carregarDashboard();
   }, []);
 
   const carregarDashboard = async () => {
     try {
       setLoading(true);
-      
+
       // Buscar estatísticas principais
       const [
         { data: vendas },
@@ -47,14 +47,13 @@ const Index = () => {
         supabase.from('profiles').select('id')
       ]);
 
-
       // Calcular vendas de hoje
       const hoje = new Date().toISOString().split('T')[0];
       const vendasHoje = vendas?.filter(v =>
         v.created_at.startsWith(hoje)
       ).reduce((sum, v) => sum + (v.total || 0), 0) || 0;
 
-     // Calcular receita mensal
+      // Calcular receita mensal
       const inicioMes = new Date();
       inicioMes.setDate(1);
       const receitaMensal = vendas?.filter(v =>
@@ -90,13 +89,10 @@ const Index = () => {
       })) || [];
 
       setVendasRecentes(vendasFormatadas);
-      
+
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+
       // Se falhar, usar dados fictícios para não quebrar
       setStats({
         vendasHoje: 2450,
@@ -132,7 +128,7 @@ const Index = () => {
     }
   };
 
- const formatarData = (data: string) => {
+  const formatarData = (data: string) => {
     return new Date(data).toLocaleString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
