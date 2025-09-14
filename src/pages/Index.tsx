@@ -1,4 +1,3 @@
-// src/pages/Index.tsx
 import React, { useEffect, useState } from 'react';
 import { ShoppingCart, Package, Users, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,7 +17,7 @@ interface VendaRecente {
   created_at: string;
 }
 
-const Index = () => {
+const Index: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({
     vendasHoje: 0,
     totalProdutos: 0,
@@ -26,23 +25,25 @@ const Index = () => {
     receitaMensal: 0
   });
   const [vendasRecentes, setVendasRecentes] = useState<VendaRecente[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     carregarDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Função para buscar e computar dados do dashboard
   const carregarDashboard = async () => {
-    try {
-      setLoading(true);
+    setLoading(true);
 
+    try {
       // Buscar estatísticas principais
       const [
-        { data: vendas },
-        { data: produtos },
-        { data: clientes }
+        { data: vendas, error: vendasError },
+        { data: produtos, error: produtosError },
+        { data: clientes, error: clientesError }
       ] = await Promise.all([
-        supabase.from('sales').select('total, created_at'),
+        supabase.from('sales').select('id, total, created_at'),
         supabase.from('products').select('id'),
         supabase.from('profiles').select('id')
       ]);
@@ -53,52 +54,90 @@ const Index = () => {
 
       // Vendas de hoje
       const vendasHoje =
-        vendas
-          ?.filter(v => v.created_at.startsWith(hojeStr))
-          .reduce((sum, v) => sum + Number(v.total), 0) || 0;
+        vendas?.filter(v => {
+          // created_at pode ser null ou undefined
+          if (!v.created_at) return false;
+          return String(v.created_at).startsWith(hojeStr);
+        }).reduce((sum, v) => sum + Number(v.total ?? 0), 0) || 0;
 
       // Receita mensal
       const receitaMensal =
-        vendas
-          ?.filter(v => new Date(v.created_at) >= inicioMes)
-          .reduce((sum, v) => sum + Number(v.total), 0) || 0;
+        vendas?.filter(v => {
+          if (!v.created_at) return false;
+          return new Date(v.created_at) >= inicioMes;
+        }).reduce((sum, v) => sum + Number(v.total ?? 0), 0) || 0;
 
       setStats({
         vendasHoje,
-        totalProdutos: produtos?.length || 0,
-        totalClientes: clientes?.length || 0,
+        totalProdutos: produtos?.length ?? 0,
+        totalClientes: clientes?.length ?? 0,
         receitaMensal
       });
 
-      // Buscar vendas recentes com cliente vinculado (full_name)
-      const { data: vendasRecentesData, error } = await supabase
+      // Buscar vendas recentes (5 últimas)
+      // Primeiro tenta buscar direto cliente_nome
+      let vendasRecentesData: any[] | null = null;
+      let vendasRecentesError: any = null;
+
+      const { data: vendasRecentesDireto, error: vendasRecentesDiretoError } = await supabase
         .from('sales')
-        .select(`
-          id,
-          total,
-          status,
-          created_at,
-          profiles ( full_name )
-        `)
+        .select('id, cliente_nome, total, status, created_at')
         .order('created_at', { ascending: false })
         .limit(5);
 
-      if (error) console.error('Erro ao buscar vendas recentes:', error);
+      if (vendasRecentesDiretoError) {
+        vendasRecentesError = vendasRecentesDiretoError;
+      }
 
-      const vendasFormatadas =
-        vendasRecentesData?.map(venda => ({
+      if (vendasRecentesDireto && Array.isArray(vendasRecentesDireto) && vendasRecentesDireto.length > 0) {
+        vendasRecentesData = vendasRecentesDireto.map(venda => ({
+          id: venda.id,
+          cliente_nome: venda.cliente_nome || 'Cliente não informado',
+          total: Number(venda.total ?? 0),
+          status: venda.status || 'Concluída',
+          created_at: venda.created_at ?? ''
+        }));
+      } else {
+        // Se não existe cliente_nome, tenta buscar via cliente_id e profiles
+        const { data: vendasRecentesRelacionada, error: vendasRecentesRelacionadaError } = await supabase
+          .from('sales')
+          .select(`
+            id,
+            cliente_id,
+            total,
+            status,
+            created_at,
+            profiles ( full_name )
+          `)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (vendasRecentesRelacionadaError) {
+          vendasRecentesError = vendasRecentesRelacionadaError;
+        }
+
+        vendasRecentesData = vendasRecentesRelacionada?.map((venda: any) => ({
           id: venda.id,
           cliente_nome: venda.profiles?.full_name || 'Cliente não informado',
-          total: Number(venda.total),
+          total: Number(venda.total ?? 0),
           status: venda.status || 'Concluída',
-          created_at: venda.created_at
-        })) || [];
+          created_at: venda.created_at ?? ''
+        })) ?? [];
+      }
 
-      setVendasRecentes(vendasFormatadas);
+      setVendasRecentes(Array.isArray(vendasRecentesData) ? vendasRecentesData : []);
+
+      if (vendasRecentesError) {
+        // Loga erro, mas não quebra fluxo
+        // eslint-disable-next-line no-console
+        console.error('Erro ao buscar vendas recentes:', vendasRecentesError);
+      }
+
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Erro ao carregar dashboard:', error);
 
-      // fallback para não quebrar a tela
+      // Mock se falhar
       setStats({
         vendasHoje: 2450,
         totalProdutos: 1234,
@@ -133,24 +172,34 @@ const Index = () => {
     }
   };
 
-  const formatarData = (data: string) => {
-    return new Date(data).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  // Formata data para pt-BR
+  const formatarData = (data: string | undefined | null) => {
+    if (!data) return '';
+    try {
+      return new Date(data).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return '';
+    }
   };
 
-  const formatarMoeda = (valor: number) => {
+  // Formata moeda para pt-BR
+  const formatarMoeda = (valor: number | undefined | null) => {
+    if (typeof valor !== 'number' || isNaN(valor)) return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     }).format(valor);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
+  // Cor do status
+  const getStatusColor = (status: string | undefined | null) => {
+    const s = (status ?? '').toLowerCase();
+    switch (s) {
       case 'concluída':
       case 'concluida':
       case 'finalizada':
@@ -165,6 +214,7 @@ const Index = () => {
     }
   };
 
+  // Render loading skeleton
   if (loading) {
     return (
       <div className="space-y-6">
@@ -298,10 +348,10 @@ const Index = () => {
                 vendasRecentes.map(venda => (
                   <tr key={venda.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      #{venda.id.slice(-6)}
+                      #{typeof venda.id === 'string' ? venda.id.slice(-6) : ''}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {venda.cliente_nome}
+                      {venda.cliente_nome || 'Cliente não informado'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatarMoeda(venda.total)}
@@ -312,7 +362,7 @@ const Index = () => {
                           venda.status
                         )}`}
                       >
-                        {venda.status}
+                        {venda.status || 'Concluída'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
