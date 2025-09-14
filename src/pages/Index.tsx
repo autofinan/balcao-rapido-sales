@@ -1,4 +1,4 @@
-// src/pages/Index.tsx - corrigido
+// src/pages/Index.tsx
 import React, { useEffect, useState } from 'react';
 import { ShoppingCart, Package, Users, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,29 +36,29 @@ const Index = () => {
     try {
       setLoading(true);
 
-      // Buscar estatísticas principais
+      // Buscar estatísticas
       const [
         { data: vendas },
         { data: produtos },
         { data: clientes }
       ] = await Promise.all([
-        supabase.from('sales').select('id, total, created_at, status'),
+        supabase.from('sales').select('total, created_at'),
         supabase.from('products').select('id'),
         supabase.from('profiles').select('id')
       ]);
 
       // Calcular vendas de hoje
       const hoje = new Date().toISOString().split('T')[0];
-      const vendasHoje = vendas?.filter(v =>
-        v.created_at.startsWith(hoje)
-      ).reduce((sum, v) => sum + (v.total || 0), 0) || 0;
+      const vendasHoje =
+        vendas?.filter(v => v.created_at.startsWith(hoje))
+          .reduce((sum, v) => sum + v.total, 0) || 0;
 
       // Calcular receita mensal
       const inicioMes = new Date();
       inicioMes.setDate(1);
-      const receitaMensal = vendas?.filter(v =>
-        new Date(v.created_at) >= inicioMes
-      ).reduce((sum, v) => sum + (v.total || 0), 0) || 0;
+      const receitaMensal =
+        vendas?.filter(v => new Date(v.created_at) >= inicioMes)
+          .reduce((sum, v) => sum + v.total, 0) || 0;
 
       setStats({
         vendasHoje,
@@ -67,7 +67,7 @@ const Index = () => {
         receitaMensal
       });
 
-      // Buscar vendas recentes com relação ao cliente
+      // Buscar vendas recentes (com cliente vinculado)
       const { data: vendasRecentesData } = await supabase
         .from('sales')
         .select(`
@@ -75,25 +75,25 @@ const Index = () => {
           total,
           status,
           created_at,
-          profiles ( name )
+          profiles ( nome )
         `)
         .order('created_at', { ascending: false })
         .limit(5);
 
-      const vendasFormatadas = vendasRecentesData?.map(venda => ({
-        id: venda.id,
-        cliente_nome: venda.profiles?.name || 'Cliente não informado',
-        total: venda.total,
-        status: venda.status,
-        created_at: venda.created_at
-      })) || [];
+      const vendasFormatadas =
+        vendasRecentesData?.map(venda => ({
+          id: venda.id,
+          cliente_nome: venda.profiles?.nome || 'Cliente não informado',
+          total: venda.total,
+          status: venda.status,
+          created_at: venda.created_at
+        })) || [];
 
       setVendasRecentes(vendasFormatadas);
-
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
 
-      // Se falhar, usar dados fictícios para não quebrar
+      // Se falhar, usar dados fictícios
       setStats({
         vendasHoje: 2450,
         totalProdutos: 1234,
@@ -104,21 +104,21 @@ const Index = () => {
         {
           id: '001',
           cliente_nome: 'Maria Silva',
-          total: 145.90,
+          total: 145.9,
           status: 'Concluída',
           created_at: new Date().toISOString()
         },
         {
           id: '002',
           cliente_nome: 'João Santos',
-          total: 89.50,
+          total: 89.5,
           status: 'Processando',
           created_at: new Date().toISOString()
         },
         {
           id: '003',
           cliente_nome: 'Ana Costa',
-          total: 234.20,
+          total: 234.2,
           status: 'Concluída',
           created_at: new Date().toISOString()
         }
@@ -145,15 +145,14 @@ const Index = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'completed':
+    switch (status.toLowerCase()) {
       case 'concluída':
+      case 'concluida':
       case 'finalizada':
         return 'bg-green-100 text-green-800';
-      case 'processing':
+      case 'processando':
       case 'pendente':
         return 'bg-blue-100 text-blue-800';
-      case 'cancelled':
       case 'cancelada':
         return 'bg-red-100 text-red-800';
       default:
@@ -168,10 +167,12 @@ const Index = () => {
           <div className="h-8 bg-gray-200 rounded w-48 mb-2 animate-pulse"></div>
           <div className="h-4 bg-gray-200 rounded w-64 animate-pulse"></div>
         </div>
-        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white p-6 rounded-lg shadow-sm border">
+            <div
+              key={i}
+              className="bg-white p-6 rounded-lg shadow-sm border"
+            >
               <div className="animate-pulse">
                 <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
                 <div className="h-8 bg-gray-200 rounded w-24 mb-2"></div>
@@ -194,6 +195,7 @@ const Index = () => {
 
       {/* Cards de estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Vendas Hoje */}
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
             <div>
@@ -209,11 +211,14 @@ const Index = () => {
           <p className="text-xs text-green-600 mt-2">Atualizado agora</p>
         </div>
 
+        {/* Produtos */}
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Produtos</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalProdutos}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats.totalProdutos}
+              </p>
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
               <Package className="w-6 h-6 text-blue-600" />
@@ -222,11 +227,14 @@ const Index = () => {
           <p className="text-xs text-blue-600 mt-2">Cadastrados</p>
         </div>
 
+        {/* Clientes */}
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Clientes</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalClientes}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats.totalClientes}
+              </p>
             </div>
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
               <Users className="w-6 h-6 text-purple-600" />
@@ -235,6 +243,7 @@ const Index = () => {
           <p className="text-xs text-purple-600 mt-2">Cadastrados</p>
         </div>
 
+        {/* Receita Mensal */}
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
             <div>
@@ -254,7 +263,9 @@ const Index = () => {
       {/* Tabela de vendas recentes */}
       <div className="bg-white rounded-lg shadow-sm border">
         <div className="p-6 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">Vendas Recentes</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Vendas Recentes
+          </h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -279,7 +290,7 @@ const Index = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {vendasRecentes.length > 0 ? (
-                vendasRecentes.map((venda) => (
+                vendasRecentes.map(venda => (
                   <tr key={venda.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       #{venda.id.slice(-6)}
@@ -291,7 +302,11 @@ const Index = () => {
                       {formatarMoeda(venda.total)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(venda.status)}`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                          venda.status
+                        )}`}
+                      >
                         {venda.status}
                       </span>
                     </td>
@@ -302,7 +317,10 @@ const Index = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     Nenhuma venda encontrada
                   </td>
                 </tr>
