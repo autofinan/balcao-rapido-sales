@@ -44,6 +44,7 @@ export function BudgetForm({ open, onOpenChange, onSave }: BudgetFormProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchProduct, setSearchProduct] = useState("");
   const [loading, setLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"pix" | "cartao" | "dinheiro">("pix");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -127,9 +128,21 @@ export function BudgetForm({ open, onOpenChange, onSave }: BudgetFormProps) {
       return;
     }
 
+    if (!paymentMethod) {
+      toast({
+        title: "Erro",
+        description: "Selecione o método de pagamento",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setLoading(true);
-      
+
+      const user = await supabase.auth.getUser();
+      const owner_id = user.data?.user?.id || null;
+
       const subtotal = calculateSubtotal();
       const discount = calculateDiscount();
       const total = calculateTotal();
@@ -146,7 +159,9 @@ export function BudgetForm({ open, onOpenChange, onSave }: BudgetFormProps) {
           discount_value: discountValue,
           total,
           notes: notes || null,
-          valid_until: validUntil || null
+          valid_until: validUntil || null,
+          owner_id, // <-- Adiciona owner_id
+          payment_method // <-- Salva o método de pagamento escolhido
         } as any)
         .select()
         .single();
@@ -182,6 +197,7 @@ export function BudgetForm({ open, onOpenChange, onSave }: BudgetFormProps) {
       setDiscountType("percentage");
       setDiscountValue(0);
       setItems([]);
+      setPaymentMethod("pix");
       
       onSave();
     } catch (error) {
@@ -325,8 +341,8 @@ export function BudgetForm({ open, onOpenChange, onSave }: BudgetFormProps) {
             </div>
           )}
 
-          {/* Desconto */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Desconto e Pagamento */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label>Tipo de Desconto</Label>
               <Select value={discountType} onValueChange={(value: "percentage" | "fixed") => setDiscountType(value)}>
@@ -362,6 +378,20 @@ export function BudgetForm({ open, onOpenChange, onSave }: BudgetFormProps) {
                 value={validUntil}
                 onChange={(e) => setValidUntil(e.target.value)}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="paymentMethod">Método de Pagamento</Label>
+              <Select value={paymentMethod} onValueChange={(value: "pix" | "cartao" | "dinheiro") => setPaymentMethod(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pix">Pix</SelectItem>
+                  <SelectItem value="cartao">Cartão</SelectItem>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
