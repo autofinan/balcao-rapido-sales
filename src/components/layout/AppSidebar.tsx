@@ -40,7 +40,7 @@ const menuItems = [
     items: [
       {
         title: 'PDV',
-        url: '/pdv',
+        url: '/pos',
         icon: CreditCard,
       },
       {
