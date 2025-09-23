@@ -1,64 +1,139 @@
+import React from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Calculator,
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
+import {
+  Home,
+  ShoppingCart,
   Package,
-  FolderTree,
+  FileText,
+  DollarSign,
   BarChart3,
+  Tags,
+  Archive,
   Upload,
-  Download,
+  PackagePlus,
+  CreditCard,
+  Receipt,
+  FolderTree,
   Settings,
   TrendingUp,
-  Home,
-  FileText,
-  Receipt,
   X,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-
-type View =
-  | "dashboard"
-  | "pos"
-  | "products"
-  | "categories"
-  | "sales"
-  | "bulk-products"
-  | "import-csv"
-  | "stock-adjustment"
-  | "reports"
-  | "budgets"
-  | "expenses";
+} from 'lucide-react';
 
 interface AppSidebarProps {
-  currentView: View;
-  onViewChange: (view: View) => void;
   onCloseMobile?: () => void;
 }
 
-const menuItems: { id: View; title: string; icon: any; path: string }[] = [
-  { id: "dashboard", title: "Dashboard", icon: Home, path: "/" },
-  { id: "pos", title: "PDV", icon: Calculator, path: "/pos" },
-  { id: "budgets", title: "Orçamentos", icon: FileText, path: "/budgets" },
-  { id: "expenses", title: "Despesas", icon: Receipt, path: "/expenses" },
-  { id: "products", title: "Produtos", icon: Package, path: "/products" },
-  { id: "bulk-products", title: "Cadastro em Lote", icon: Upload, path: "/bulk-products" },
-  { id: "import-csv", title: "Importar CSV", icon: Download, path: "/import-csv" },
-  { id: "stock-adjustment", title: "Ajuste de Estoque", icon: Settings, path: "/stock-adjustment" },
-  { id: "categories", title: "Categorias", icon: FolderTree, path: "/categories" },
-  { id: "sales", title: "Vendas", icon: BarChart3, path: "/sales" },
-  { id: "reports", title: "Relatórios", icon: TrendingUp, path: "/reports" },
+const menuItems = [
+  {
+    title: 'Dashboard',
+    items: [
+      {
+        title: 'Início',
+        url: '/',
+        icon: Home,
+      },
+    ],
+  },
+  {
+    title: 'Vendas',
+    items: [
+      {
+        title: 'PDV',
+        url: '/pdv',
+        icon: CreditCard,
+      },
+      {
+        title: 'Vendas',
+        url: '/sales',
+        icon: ShoppingCart,
+      },
+      {
+        title: 'Orçamentos',
+        url: '/budgets',
+        icon: FileText,
+      },
+      {
+        title: 'Despesas',
+        url: '/expenses',
+        icon: Receipt,
+      },
+    ],
+  },
+  {
+    title: 'Produtos',
+    items: [
+      {
+        title: 'Produtos',
+        url: '/products',
+        icon: Package,
+      },
+      {
+        title: 'Cadastro em Lote',
+        url: '/bulk-products',
+        icon: PackagePlus,
+      },
+      {
+        title: 'Importar CSV',
+        url: '/import-csv',
+        icon: Upload,
+      },
+      {
+        title: 'Categorias',
+        url: '/categories',
+        icon: Tags,
+      },
+      {
+        title: 'Ajuste de Estoque',
+        url: '/stock-adjustment',
+        icon: Settings,
+      },
+    ],
+  },
+  {
+    title: 'Gestão',
+    items: [
+      {
+        title: 'Estoque',
+        url: '/stock',
+        icon: Archive,
+      },
+      {
+        title: 'Relatórios',
+        url: '/reports',
+        icon: BarChart3,
+      },
+      {
+        title: 'Relatórios Avançados',
+        url: '/advanced-reports',
+        icon: TrendingUp,
+      },
+    ],
+  },
 ];
 
-export function AppSidebar({ currentView, onViewChange, onCloseMobile }: AppSidebarProps) {
+export function AppSidebar({ onCloseMobile }: AppSidebarProps) {
+  const location = useLocation();
   const navigate = useNavigate();
 
-  const handleItemClick = (view: View, path: string) => {
-    onViewChange(view);
-    navigate(path);
-    if (onCloseMobile) onCloseMobile(); // fecha menu mobile automaticamente
-  };
+  // Função para navegação + fechar mobile
+  function handleMenuClick(url: string) {
+    navigate(url);
+    if (onCloseMobile) onCloseMobile();
+  }
 
   return (
-    <div className="h-full flex flex-col bg-background w-full">
+    <Sidebar className="h-full flex flex-col bg-background w-full">
       {/* Header da Sidebar */}
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-2">
@@ -70,8 +145,6 @@ export function AppSidebar({ currentView, onViewChange, onCloseMobile }: AppSide
             <p className="text-xs text-muted-foreground">Gestão & Vendas</p>
           </div>
         </div>
-
-        {/* Botão fechar mobile */}
         {onCloseMobile && (
           <Button
             variant="ghost"
@@ -84,34 +157,54 @@ export function AppSidebar({ currentView, onViewChange, onCloseMobile }: AppSide
         )}
       </div>
 
-      {/* Menu Items */}
-      <nav className="flex-1 overflow-y-auto p-3">
-        <ul className="space-y-1">
-          {menuItems.map((item) => (
-            <li key={item.id}>
-              <button
-                onClick={() => handleItemClick(item.id, item.path)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors text-left hover:bg-accent hover:text-accent-foreground ${
-                  currentView === item.id
-                    ? "bg-accent text-accent-foreground font-medium"
-                    : "text-muted-foreground"
-                }`}
-              >
-                <item.icon className="h-4 w-4 flex-shrink-0" />
-                <span className="truncate">{item.title}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      {/* Conteúdo do menu */}
+      <SidebarContent className="flex-1 overflow-y-auto p-3">
+        {menuItems.map((group) => (
+          <SidebarGroup key={group.title}>
+            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === item.url}
+                    >
+                      <button
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors text-left hover:bg-accent hover:text-accent-foreground"
+                        style={{
+                          background:
+                            location.pathname === item.url
+                              ? 'var(--accent)'
+                              : undefined,
+                          color:
+                            location.pathname === item.url
+                              ? 'var(--accent-foreground)'
+                              : undefined,
+                          fontWeight:
+                            location.pathname === item.url ? 500 : undefined,
+                        }}
+                        onClick={() => handleMenuClick(item.url)}
+                      >
+                        <item.icon className="w-4 h-4 flex-shrink-0" />
+                        <span>{item.title}</span>
+                      </button>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
+      </SidebarContent>
 
-      {/* Footer */}
+      {/* Footer/Status */}
       <div className="p-4 border-t">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
           <span>Sistema Online</span>
         </div>
       </div>
-    </div>
+    </Sidebar>
   );
 }
