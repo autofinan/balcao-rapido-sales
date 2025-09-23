@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -10,7 +10,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
 import {
   Home,
   ShoppingCart,
@@ -23,16 +22,7 @@ import {
   Upload,
   PackagePlus,
   CreditCard,
-  Receipt,
-  FolderTree,
-  Settings,
-  TrendingUp,
-  X,
 } from 'lucide-react';
-
-interface AppSidebarProps {
-  onCloseMobile?: () => void;
-}
 
 const menuItems = [
   {
@@ -63,11 +53,6 @@ const menuItems = [
         url: '/budgets',
         icon: FileText,
       },
-      {
-        title: 'Despesas',
-        url: '/expenses',
-        icon: Receipt,
-      },
     ],
   },
   {
@@ -93,11 +78,6 @@ const menuItems = [
         url: '/categories',
         icon: Tags,
       },
-      {
-        title: 'Ajuste de Estoque',
-        url: '/stock-adjustment',
-        icon: Settings,
-      },
     ],
   },
   {
@@ -109,56 +89,25 @@ const menuItems = [
         icon: Archive,
       },
       {
+        title: 'Despesas',
+        url: '/expenses',
+        icon: DollarSign,
+      },
+      {
         title: 'Relatórios',
         url: '/reports',
         icon: BarChart3,
-      },
-      {
-        title: 'Relatórios Avançados',
-        url: '/advanced-reports',
-        icon: TrendingUp,
       },
     ],
   },
 ];
 
-export function AppSidebar({ onCloseMobile }: AppSidebarProps) {
+export function AppSidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
-
-  // Função para navegação + fechar mobile
-  function handleMenuClick(url: string) {
-    navigate(url);
-    if (onCloseMobile) onCloseMobile();
-  }
 
   return (
-    <Sidebar className="h-full flex flex-col bg-background w-full">
-      {/* Header da Sidebar */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80">
-            <Home className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-sm font-semibold">Sistema POS</h1>
-            <p className="text-xs text-muted-foreground">Gestão & Vendas</p>
-          </div>
-        </div>
-        {onCloseMobile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onCloseMobile}
-            className="h-8 w-8 lg:hidden"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-
-      {/* Conteúdo do menu */}
-      <SidebarContent className="flex-1 overflow-y-auto p-3">
+    <Sidebar>
+      <SidebarContent>
         {menuItems.map((group) => (
           <SidebarGroup key={group.title}>
             <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
@@ -170,25 +119,10 @@ export function AppSidebar({ onCloseMobile }: AppSidebarProps) {
                       asChild
                       isActive={location.pathname === item.url}
                     >
-                      <button
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors text-left hover:bg-accent hover:text-accent-foreground"
-                        style={{
-                          background:
-                            location.pathname === item.url
-                              ? 'var(--accent)'
-                              : undefined,
-                          color:
-                            location.pathname === item.url
-                              ? 'var(--accent-foreground)'
-                              : undefined,
-                          fontWeight:
-                            location.pathname === item.url ? 500 : undefined,
-                        }}
-                        onClick={() => handleMenuClick(item.url)}
-                      >
-                        <item.icon className="w-4 h-4 flex-shrink-0" />
+                      <Link to={item.url}>
+                        <item.icon className="w-4 h-4" />
                         <span>{item.title}</span>
-                      </button>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -197,14 +131,6 @@ export function AppSidebar({ onCloseMobile }: AppSidebarProps) {
           </SidebarGroup>
         ))}
       </SidebarContent>
-
-      {/* Footer/Status */}
-      <div className="p-4 border-t">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-          <span>Sistema Online</span>
-        </div>
-      </div>
     </Sidebar>
   );
 }
