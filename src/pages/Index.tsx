@@ -231,7 +231,7 @@ const Index: React.FC = () => {
       title: 'Nova Venda',
       description: 'Iniciar uma nova transação no PDV',
       icon: ShoppingCart,
-      href: '/pdv',
+      href: '/pos',
       color: 'bg-primary',
     },
     {
