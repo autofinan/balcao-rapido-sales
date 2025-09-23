@@ -354,31 +354,38 @@ const Index: React.FC = () => {
         </Card>
       )}
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {quickActions.map((action) => (
-          <Card key={action.title} className="border-0 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105">
-            <CardHeader className="pb-3">
-              <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-lg ${action.color} text-white`}>
-                  <action.icon className="w-5 h-5" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg">{action.title}</CardTitle>
-                  <CardDescription className="text-sm">
-                    {action.description}
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <Button asChild variant="outline" className="w-full">
-                <Link to={action.href}>Acessar</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+{/* Quick Actions */}
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+  {quickActions.map((action) => (
+    <Card key={action.title} className="border-0 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105">
+      <CardHeader className="pb-3">
+        <div className="flex items-center space-x-3">
+          <div className={`p-2 rounded-lg ${action.color} text-white`}>
+            <action.icon className="w-5 h-5" />
+          </div>
+          <div>
+            <CardTitle className="text-lg">{action.title}</CardTitle>
+            <CardDescription className="text-sm">
+              {action.description}
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {/* Corrigido apenas para o botão Nova Venda */}
+        {action.href === '/pdv' ? (
+          <Link to={action.href} className="w-full">
+            <Button variant="outline" className="w-full">Acessar</Button>
+          </Link>
+        ) : (
+          <Button asChild variant="outline" className="w-full">
+            <Link to={action.href}>Acessar</Link>
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  ))}
+</div>
 
       {/* Tabela de vendas recentes */}
       <Card className="border-0 shadow-md">
