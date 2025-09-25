@@ -25,12 +25,14 @@ interface ConvertBudgetModalProps {
 }
 
 const paymentMethods = [
-  { value: "cash", label: "Dinheiro", icon: Banknote },
-  { value: "credit_card", label: "Cartão de Crédito", icon: CreditCard },
-  { value: "debit_card", label: "Cartão de Débito", icon: CreditCard },
+  { value: "dinheiro", label: "Dinheiro", icon: Banknote },
+  { value: "debito", label: "Cartão de Débito", icon: CreditCard },
+  { value: "credito_vista", label: "Cartão de Crédito (à vista)", icon: CreditCard },
+  { value: "credito_parcelado", label: "Cartão de Crédito (parcelado)", icon: CreditCard },
   { value: "pix", label: "PIX", icon: Smartphone },
-  { value: "bank_transfer", label: "Transferência", icon: Building },
+  { value: "transferencia", label: "Transferência Bancária", icon: Building },
 ];
+
 
 export function ConvertBudgetModal({ 
   budget, 
